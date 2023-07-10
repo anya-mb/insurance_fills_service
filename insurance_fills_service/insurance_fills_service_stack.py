@@ -2,16 +2,13 @@ import os
 from constructs import Construct
 from aws_cdk import (
     Stack,
-    aws_lambda as lambda_, CfnOutput, Duration
+    aws_lambda as lambda_, CfnOutput, Duration,
+    aws_secretsmanager as sm,
 )
 import aws_cdk.aws_apigatewayv2_alpha as _apigw
 import aws_cdk.aws_apigatewayv2_integrations_alpha as _integrations
 
 from os.path import dirname
-
-import json
-import boto3
-from botocore.exceptions import ClientError
 
 
 DIRNAME = dirname(dirname(__file__))
@@ -21,6 +18,8 @@ class InsuranceFillsServiceStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        secret = sm.Secret.from_secret_name_v2(self, "insurance_secret", "insurance_fills_secrets")
 
         # Create the Lambda function to receive the request
         # The source code is in './src' directory
@@ -35,6 +34,8 @@ class InsuranceFillsServiceStack(Stack):
             },
             function_name="fill_insurance_lambda"
         )
+
+        secret.grant_read(lambda_fn)
 
         # Create the HTTP API with CORS
         http_api = _apigw.HttpApi(
