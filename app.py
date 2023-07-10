@@ -2,10 +2,10 @@
 
 import aws_cdk as cdk
 
-from cdk_workshop.cdk_workshop_stack import CdkWorkshopStack
+from insurance_fills_service.insurance_fills_service_stack import InsuranceFillsServiceStack
 
 
 app = cdk.App()
-CdkWorkshopStack(app, "cdk-workshop")
+InsuranceFillsServiceStack(app, "insurance-fills-service")
 
 app.synth()
