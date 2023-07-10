@@ -9,6 +9,10 @@ import aws_cdk.aws_apigatewayv2_integrations_alpha as _integrations
 
 from os.path import dirname
 
+import json
+import boto3
+from botocore.exceptions import ClientError
+
 
 DIRNAME = dirname(dirname(__file__))
 
