@@ -5,6 +5,31 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 
+import boto3
+import random
+import string
+
+from time import gmtime, strftime
+
+
+def lambda_handler():  # event, context
+    s3 = boto3.client('s3')
+
+    # Generate a random file name
+    file_name = ''.join(random.choices(string.ascii_lowercase, k=10))
+
+    # Generate a random file content
+    curr_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    file_content = f'This is a random file content created: {curr_time}'
+
+    # Upload the file to S3
+    s3.put_object(Bucket='filled-insurance-forms', Key=file_name, Body=file_content)
+
+    return {
+        'statusCode': 200,
+        'body': f'File uploaded successfully! file_name: {file_name}'
+    }
+
 
 def get_secret():
 
@@ -38,7 +63,7 @@ def handler(event, context):
 
         response = {
             "statusCode": HTTPStatus.OK.value,
-            "body": json.dumps(get_secret(), indent=2),
+            "body": json.dumps(lambda_handler(), indent=2),
             "headers": {
                 "content-type": "application/json",
             },
