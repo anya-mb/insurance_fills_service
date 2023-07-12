@@ -15,6 +15,9 @@ from time import gmtime, strftime
 def lambda_handler():  # event, context
     s3 = boto3.client('s3')
 
+    bucket = os.environ['BUCKET_NAME']
+    print("bucket", bucket)
+
     # Generate a random file name
     file_name = ''.join(random.choices(string.ascii_lowercase, k=10))
 
@@ -23,7 +26,7 @@ def lambda_handler():  # event, context
     file_content = f'This is a random file content created: {curr_time}'
 
     # Upload the file to S3
-    s3.put_object(Bucket='filled-insurance-forms', Key=file_name, Body=file_content)
+    s3.put_object(Bucket=bucket, Key=file_name, Body=file_content)
 
     return {
         'statusCode': 200,
