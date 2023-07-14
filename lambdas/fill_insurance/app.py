@@ -26,18 +26,13 @@ SECRET_KEY_OPENAI_KEY = "open_ai_key"
 def get_openai_quote():
     print("before key")
     openai_key = get_secret()[SECRET_KEY_OPENAI_KEY]
-    print(f"after key, {openai_key[:5]}")
 
     llm = OpenAI(openai_api_key=openai_key)
-    # chat = ChatOpenAI(temperature=0.5, openai_api_key=openai_key)
 
     result = llm.predict("Give me a motivational quote")
     print(result)
 
-    # result = chat.predict_messages([HumanMessage(content="Give me a motivational quote")])
-    # quote = result.content
-
-    quote = result  #"dummy value"
+    quote = result
 
     save_result = save_to_s3(quote)
     print("saved to s3")
@@ -50,10 +45,8 @@ def save_to_s3(file_content):
     bucket = os.environ['BUCKET_NAME']
     print("bucket", bucket)
 
-    # Generate a random file name
     file_name = ''.join(random.choices(string.ascii_lowercase, k=10))
 
-    # Upload the file to S3
     s3.put_object(Bucket=bucket, Key=file_name, Body=file_content)
 
     return {
@@ -62,20 +55,17 @@ def save_to_s3(file_content):
     }
 
 
-def lambda_handler():  # event, context
+def lambda_handler():
     s3 = boto3.client('s3')
 
     bucket = os.environ['BUCKET_NAME']
     print("bucket", bucket)
 
-    # Generate a random file name
     file_name = ''.join(random.choices(string.ascii_lowercase, k=10))
 
-    # Generate a random file content
     curr_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
     file_content = f'This is a random file content created: {curr_time}'
 
-    # Upload the file to S3
     s3.put_object(Bucket=bucket, Key=file_name, Body=file_content)
 
     return {
@@ -86,7 +76,6 @@ def lambda_handler():  # event, context
 
 def get_secret():
 
-    # secret_name = "insurance_fills_secrets"
     region_name = "us-east-1"
 
     # Create a Secrets Manager client
@@ -101,8 +90,6 @@ def get_secret():
             SecretId=SECRET_NAME
         )
     except ClientError as e:
-        # For a list of exceptions thrown, see
-        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
         raise e
 
     # Decrypts secret using the associated KMS key.
@@ -113,7 +100,7 @@ def get_secret():
 
 def handler(event, context):
     try:
-        result = get_openai_quote()  #get_openai_quote()
+        result = get_openai_quote()
         response = {
             "statusCode": HTTPStatus.OK.value,
             "body": json.dumps(result, indent=2),
