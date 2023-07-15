@@ -2,7 +2,9 @@
 
 import aws_cdk as cdk
 
-from insurance_fills_service.insurance_fills_service_stack import InsuranceFillsServiceStack
+from insurance_fills_service.insurance_fills_service_stack import (
+    InsuranceFillsServiceStack,
+)
 
 
 app = cdk.App()

@@ -12,11 +12,7 @@ from time import gmtime, strftime
 
 from langchain.llms import OpenAI
 from langchain.chat_models import ChatOpenAI
-from langchain.schema import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage
-)
+from langchain.schema import AIMessage, HumanMessage, SystemMessage
 
 
 SECRET_NAME = "insurance_fills_secrets"
@@ -40,37 +36,37 @@ def get_openai_quote():
 
 
 def save_to_s3(file_content):
-    s3 = boto3.client('s3')
+    s3 = boto3.client("s3")
 
-    bucket = os.environ['BUCKET_NAME']
+    bucket = os.environ["BUCKET_NAME"]
     print("bucket", bucket)
 
-    file_name = ''.join(random.choices(string.ascii_lowercase, k=10))
+    file_name = "".join(random.choices(string.ascii_lowercase, k=10))
 
     s3.put_object(Bucket=bucket, Key=file_name, Body=file_content)
 
     return {
-        'statusCode': 200,
-        'body': f'File uploaded successfully! file_name: {file_name}, content: {file_content}'
+        "statusCode": 200,
+        "body": f"File uploaded successfully! file_name: {file_name}, content: {file_content}",
     }
 
 
 def lambda_handler():
-    s3 = boto3.client('s3')
+    s3 = boto3.client("s3")
 
-    bucket = os.environ['BUCKET_NAME']
+    bucket = os.environ["BUCKET_NAME"]
     print("bucket", bucket)
 
-    file_name = ''.join(random.choices(string.ascii_lowercase, k=10))
+    file_name = "".join(random.choices(string.ascii_lowercase, k=10))
 
     curr_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-    file_content = f'This is a random file content created: {curr_time}'
+    file_content = f"This is a random file content created: {curr_time}"
 
     s3.put_object(Bucket=bucket, Key=file_name, Body=file_content)
 
     return {
-        'statusCode': 200,
-        'body': f'File uploaded successfully! file_name: {file_name}'
+        "statusCode": 200,
+        "body": f"File uploaded successfully! file_name: {file_name}",
     }
 
 
@@ -80,20 +76,15 @@ def get_secret():
 
     # Create a Secrets Manager client
     session = boto3.session.Session()
-    client = session.client(
-        service_name='secretsmanager',
-        region_name=region_name
-    )
+    client = session.client(service_name="secretsmanager", region_name=region_name)
 
     try:
-        get_secret_value_response = client.get_secret_value(
-            SecretId=SECRET_NAME
-        )
+        get_secret_value_response = client.get_secret_value(SecretId=SECRET_NAME)
     except ClientError as e:
         raise e
 
     # Decrypts secret using the associated KMS key.
-    secret = get_secret_value_response['SecretString']
+    secret = get_secret_value_response["SecretString"]
 
     return json.loads(secret)
 

@@ -32,7 +32,11 @@ jobs:
       run: |
         npm install -g aws-cdk    
 
-    - name: Validation
+    - name: cdk synth
       run: |
-        poetry run cdk synth
+        cdk synth
+
+    - name: Black
+      run: |
+        poetry run black . --check
     
