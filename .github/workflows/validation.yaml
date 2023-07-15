@@ -34,7 +34,7 @@ jobs:
 
     - name: cdk synth
       run: |
-        cdk synth
+        poetry run cdk synth
 
     - name: Black
       run: |
