@@ -16,13 +16,15 @@ To install dependencies:
 poetry install
 ```
 
-Export environment variables:
+Export environment variables for AWS CDK:
 
 ```
 export AWS_ACCESS_KEY_ID=
 export AWS_SECRET_ACCESS_KEY=
-export OPENAI_API_KEY = 
 ```
+
+Add OpenAI api key `OPENAI_API_KEY` to `.env` file.
+
 
 To deploy on Mac OS:
 
