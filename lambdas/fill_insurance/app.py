@@ -1,19 +1,13 @@
-from http import HTTPStatus
-import os
-
 import json
-from botocore.exceptions import ClientError
-
-import boto3
+import os
 import random
 import string
-
+from http import HTTPStatus
 from time import gmtime, strftime
 
+import boto3
+from botocore.exceptions import ClientError
 from langchain.llms import OpenAI
-from langchain.chat_models import ChatOpenAI
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
-
 
 SECRET_NAME = "insurance_fills_secrets"
 SECRET_KEY_OPENAI_KEY = "open_ai_key"
@@ -71,7 +65,6 @@ def lambda_handler():
 
 
 def get_secret():
-
     region_name = "us-east-1"
 
     # Create a Secrets Manager client

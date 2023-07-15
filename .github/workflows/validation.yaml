@@ -36,7 +36,10 @@ jobs:
       run: |
         poetry run cdk synth
 
-    - name: Black
+    - name: Code style
       run: |
         poetry run black . --check
     
+    - name: Code quality
+      run: |
+        poetry run ruff .
