@@ -1,65 +1,33 @@
+## Insurance Fills Service
 
-# Welcome to your CDK Python project!
+This service allows a user (the one who wants to make a claim) to describe the claim / problem, answer additional questions and the result claim will be stored in the Insurance company database. 
 
-You should explore the contents of this project. It demonstrates a CDK app with an instance of a stack (`cdk_workshop_stack`)
-which contains an Amazon SQS queue that is subscribed to an Amazon SNS topic.
+The project is done as infrastructure-as-a-code using AWS CDK which creates CloudFormation template. AWS Lambda is deployed as a Docker image because it allows to store 10Gb in dependencies, otherwise the limit is up to 128 Mb for all dependencies. 
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+Lambda goes to OpenAI language models for parcing the user answer and ask additional questions. Then the claimed is stored in AWS S3 bucket.
 
-This project is set up like a standard Python project.  The initialization process also creates
-a virtualenv within this project, stored under the .venv directory.  To create the virtualenv
-it assumes that there is a `python3` executable in your path with access to the `venv` package.
-If for any reason the automatic creation of the virtualenv fails, you can create the virtualenv
-manually once the init process completes.
 
-To manually create a virtualenv on MacOS and Linux:
+
+### Deployment
+
+To install dependencies:
 
 ```
-$ python3 -m venv .venv
+poetry install
 ```
 
-After the init process completes and the virtualenv is created, you can use the following
-step to activate your virtualenv.
+Export environment variables for AWS CDK:
 
 ```
-$ source .venv/bin/activate
+export AWS_ACCESS_KEY_ID=
+export AWS_SECRET_ACCESS_KEY=
 ```
 
-If you are a Windows platform, you would activate the virtualenv like this:
+Add OpenAI api key `OPENAI_API_KEY` to `.env` file.
+
+
+To deploy on Mac OS:
 
 ```
-% .venv\Scripts\activate.bat
+DOCKER_DEFAULT_PLATFORM=linux/amd64 cdk deploy   
 ```
-
-Once the virtualenv is activated, you can install the required dependencies.
-
-```
-$ pip install -r requirements.txt
-```
-
-At this point you can now synthesize the CloudFormation template for this code.
-
-```
-$ cdk synth
-```
-
-You can now begin exploring the source code, contained in the hello directory.
-There is also a very trivial test included that can be run like this:
-
-```
-$ pytest
-```
-
-To add additional dependencies, for example other CDK libraries, just add to
-your requirements.txt file and rerun the `pip install -r requirements.txt`
-command.
-
-## Useful commands
-
- * `cdk ls`          list all stacks in the app
- * `cdk synth`       emits the synthesized CloudFormation template
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk docs`        open CDK documentation
-
-Enjoy!

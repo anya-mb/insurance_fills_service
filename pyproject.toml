@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "insurance-fills-service"
+version = "0.1.0"
+description = ""
+authors = ["anya-mb <anyamb@yandex.ru>"]
+readme = "README.md"
+packages = [{include = "insurance_fills_service"}]
+
+[tool.poetry.dependencies]
+python = ">=3.8.1,<4.0"
+boto3 = "^1.28.1"
+aws-cdk-aws-apigatewayv2-alpha = "^2.87.0a0"
+aws-cdk-aws-apigatewayv2-integrations-alpha = "^2.87.0a0"
+notebook = "^6.5.4"
+aws-cdk-lib = "^2.87.0"
+black = "^23.3.0"
+langchain = "^0.0.230"
+openai = "^0.27.8"
+python-dotenv = "^1.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
