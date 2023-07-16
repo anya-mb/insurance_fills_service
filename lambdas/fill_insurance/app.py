@@ -83,6 +83,8 @@ def get_secret():
 
 
 def handler(event, context):
+    print("Handler started")
+
     try:
         result = get_openai_quote()
         response = {

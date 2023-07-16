@@ -351,6 +351,26 @@ publication = ">=0.0.3"
 typeguard = ">=2.13.3,<2.14.0"
 
 [[package]]
+name = "aws-cdk-aws-apigatewayv2-authorizers-alpha"
+version = "2.87.0a0"
+description = "Authorizers for AWS APIGateway V2"
+category = "main"
+optional = false
+python-versions = "~=3.7"
+files = [
+    {file = "aws-cdk.aws-apigatewayv2-authorizers-alpha-2.87.0a0.tar.gz", hash = "sha256:6fd60d6388f0092d8117471070335be052b5052a85ecb0887f10c60d949d5abe"},
+    {file = "aws_cdk.aws_apigatewayv2_authorizers_alpha-2.87.0a0-py3-none-any.whl", hash = "sha256:e89699fca40beb31f0b16f8ebec1155df5dd924bb300e94fa3f0e25798016697"},
+]
+
+[package.dependencies]
+"aws-cdk.aws-apigatewayv2-alpha" = "2.87.0.a0"
+aws-cdk-lib = "2.87.0"
+constructs = ">=10.0.0,<11.0.0"
+jsii = ">=1.82.0,<2.0.0"
+publication = ">=0.0.3"
+typeguard = ">=2.13.3,<2.14.0"
+
+[[package]]
 name = "aws-cdk-aws-apigatewayv2-integrations-alpha"
 version = "2.87.0a0"
 description = "Integrations for AWS APIGateway V2"
@@ -2637,6 +2657,25 @@ socks = ["PySocks (>=1.5.6,!=1.5.7)"]
 use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
+name = "requests-aws4auth"
+version = "1.2.3"
+description = "AWS4 authentication for Requests"
+category = "main"
+optional = false
+python-versions = ">=3.3"
+files = [
+    {file = "requests-aws4auth-1.2.3.tar.gz", hash = "sha256:d4c73c19f37f80d4aa9c5bd4fa376cfd0c69299c48b00a8eb2ae6b0416164fb8"},
+    {file = "requests_aws4auth-1.2.3-py2.py3-none-any.whl", hash = "sha256:8070a5207e95fa5fe88e87d9a75f34e768cbab35bb3557ef20cbbf9426dee4d5"},
+]
+
+[package.dependencies]
+requests = "*"
+six = "*"
+
+[package.extras]
+httpx = ["httpx"]
+
+[[package]]
 name = "rfc3339-validator"
 version = "0.1.4"
 description = "A pure python RFC3339 validator"
@@ -3332,4 +3371,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<4.0"
-content-hash = "c73f65d4177b1b1b3b8164636d6ae94c53bb0bc30ad13604135a35d130f7e0a2"
+content-hash = "c7641b73a09c9b72512715b9133e06ceacf7ad260e5605705b8a8de9d95263f6"

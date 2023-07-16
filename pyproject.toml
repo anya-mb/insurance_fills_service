@@ -18,6 +18,8 @@ langchain = "^0.0.230"
 openai = "^0.27.8"
 python-dotenv = "^1.0.0"
 ruff = "^0.0.278"
+aws-cdk-aws-apigatewayv2-authorizers-alpha = "^2.87.0a0"
+requests-aws4auth = "^1.2.3"
 
 
 [build-system]

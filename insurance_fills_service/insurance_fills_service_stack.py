@@ -10,7 +10,11 @@ from aws_cdk import (
 import aws_cdk.aws_apigatewayv2_alpha as _apigw
 import aws_cdk.aws_apigatewayv2_integrations_alpha as _integrations
 
+from aws_cdk.aws_apigatewayv2_authorizers_alpha import HttpIamAuthorizer
+
 from os.path import dirname
+
+from insurance_fills_service.constructs.user import UsersStack
 
 
 DIRNAME = dirname(dirname(__file__))
@@ -48,7 +52,10 @@ class InsuranceFillsServiceStack(Stack):
 
         bucket.grant_write(lambda_fn)
 
+        UsersStack(self, "users")
+
         # Create the HTTP API with CORS
+        authorizer = HttpIamAuthorizer()
         http_api = _apigw.HttpApi(
             self,
             "MyHttpApi",
@@ -57,6 +64,7 @@ class InsuranceFillsServiceStack(Stack):
                 allow_origins=["*"],
                 max_age=Duration.days(10),
             ),
+            default_authorizer=authorizer,
         )
 
         # Add a route to GET /
