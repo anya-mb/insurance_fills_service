@@ -10,6 +10,7 @@ __pycache__/
 
 # Environments
 notebooks/.env
+.env
 .venv
 env/
 venv/
