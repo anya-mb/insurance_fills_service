@@ -8,9 +8,11 @@ class UsersStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         self.api_caller_user = User(self, "API-caller", user_name="API-caller")
-        policy = Policy(self, "MyPolicy",
-                        statements=[PolicyStatement(
-                            resources=["*"],
-                            actions=["execute-api:Invoke"]
-                        )])
+        policy = Policy(
+            self,
+            "MyPolicy",
+            statements=[
+                PolicyStatement(resources=["*"], actions=["execute-api:Invoke"])
+            ],
+        )
         policy.attach_to_user(self.api_caller_user)
