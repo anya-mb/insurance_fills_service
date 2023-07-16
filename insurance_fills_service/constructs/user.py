@@ -4,13 +4,15 @@ from constructs import Construct
 
 
 class UsersStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(
+        self, scope: Construct, construct_id: str, stage: str, **kwargs
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        self.api_caller_user = User(self, "API-caller", user_name="API-caller")
+        self.api_caller_user = User(self, "API-caller", user_name=f"API-caller-{stage}")
         policy = Policy(
             self,
-            "MyPolicy",
+            "API-caller_policy",
             statements=[
                 PolicyStatement(resources=["*"], actions=["execute-api:Invoke"])
             ],

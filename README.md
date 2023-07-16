@@ -20,7 +20,6 @@ graph LR
 Lambda -- uses GPT-3.5 --> OpenAI[OpenAI API]
 ```
 
-
 ## Setup
 
 To install dependencies:
@@ -42,7 +41,6 @@ poetry add new-package-name
 
 
 ### Deployment
-
 
 Activate environment (optional):
 ```
