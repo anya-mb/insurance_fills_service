@@ -14,6 +14,7 @@ To install dependencies:
 
 ```
 poetry install
+poetry shell
 ```
 
 Export environment variables for AWS CDK:
@@ -29,5 +30,5 @@ Add OpenAI api key `OPENAI_API_KEY` to `.env` file.
 To deploy on Mac OS:
 
 ```
-DOCKER_DEFAULT_PLATFORM=linux/amd64 cdk deploy   
+DOCKER_DEFAULT_PLATFORM=linux/amd64 cdk deploy  --all
 ```
