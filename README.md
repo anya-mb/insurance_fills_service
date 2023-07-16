@@ -8,6 +8,18 @@ Lambda goes to OpenAI language models for parcing the user answer and ask additi
 
 Add OpenAI api key `OPENAI_API_KEY` to `.env` file to run `notebooks/` files.
 
+```mermaid
+graph LR
+  UI -- SigV4 signed --> APIG[API Gateway]
+  subgraph aws[AWS account]
+    APIG --> Lambda[AWS Lambda]
+    Lambda -- Stores data --> S3[S3 bucket]
+    Lambda -- Loads credentials --> SecretsM[AWS SecretsManager]
+
+  end
+Lambda -- uses GPT-3.5 --> OpenAI[OpenAI API]
+```
+
 
 ## Setup
 
