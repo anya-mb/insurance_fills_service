@@ -21,14 +21,16 @@ DIRNAME = dirname(dirname(__file__))
 
 
 class InsuranceFillsServiceStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(
+        self, scope: Construct, construct_id: str, stage: str, **kwargs
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         bucket = s3.Bucket(
             self,
             "FilledInsuranceBucket",
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
-            bucket_name="filled-insurance-bucket",
+            bucket_name=f"filled-insurance-bucket-{stage}",
         )
 
         secret = sm.Secret.from_secret_name_v2(
@@ -40,7 +42,7 @@ class InsuranceFillsServiceStack(Stack):
         lambda_fn = lambda_.Function(
             self,
             "InsuranceFunction",
-            function_name="fill_insurance_function",
+            function_name=f"fill_insurance_function_{stage}",
             runtime=lambda_.Runtime.FROM_IMAGE,
             code=lambda_.Code.from_asset_image("lambdas/fill_insurance"),
             handler=lambda_.Handler.FROM_IMAGE,
@@ -52,7 +54,7 @@ class InsuranceFillsServiceStack(Stack):
 
         bucket.grant_write(lambda_fn)
 
-        UsersStack(self, "users")
+        UsersStack(self, f"users-{stage}", stage)
 
         # Create the HTTP API with CORS
         authorizer = HttpIamAuthorizer()
