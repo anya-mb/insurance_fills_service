@@ -18,7 +18,8 @@ credentials = boto3.Session(
 region = "us-east-1"
 service = "execute-api"
 
-endpoint = "https://c2issjr8el.execute-api.us-east-1.amazonaws.com/"
+# endpoint = "https://c2issjr8el.execute-api.us-east-1.amazonaws.com/"
+endpoint = "https://xdxb2u7ul8.execute-api.us-east-1.amazonaws.com/"
 headers = {"Content-Type": "application/json"}
 
 awsauth = AWS4Auth(
