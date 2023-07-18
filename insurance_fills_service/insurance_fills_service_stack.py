@@ -1,4 +1,5 @@
 import os
+
 from constructs import Construct
 from aws_cdk import (
     Stack,
@@ -7,6 +8,7 @@ from aws_cdk import (
     Duration,
     aws_s3 as s3,
     aws_secretsmanager as sm,
+    aws_dynamodb as dynamodb,
 )
 import aws_cdk.aws_apigatewayv2_alpha as _apigw
 import aws_cdk.aws_apigatewayv2_integrations_alpha as _integrations
@@ -87,6 +89,15 @@ class InsuranceFillsServiceStack(Stack):
             value=http_api.api_endpoint,
         )
 
+        conversations_table = dynamodb.Table(
+            self,
+            "ConversationsTable",
+            partition_key=dynamodb.Attribute(
+                name="id", type=dynamodb.AttributeType.STRING
+            ),
+            table_name=f"ConversationsTable-{stage}",
+        )
+
         # POST create forms lambda
         lambda_create_form = lambda_.Function(
             self,
@@ -96,7 +107,7 @@ class InsuranceFillsServiceStack(Stack):
             code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/crud")),
             handler="app.lambda_create_form",
             timeout=Duration.seconds(30),
-            # environment={"BUCKET_NAME": bucket.bucket_name},
+            environment={"CONVERSATION_TABLE_NAME": conversations_table.table_name},
         )
 
         # Add a route to GET /
@@ -107,3 +118,10 @@ class InsuranceFillsServiceStack(Stack):
                 "LambdaProxyIntegration", handler=lambda_create_form
             ),
         )
+
+        # filled_forms_table = dynamodb.Table(self, "FilledFormsTable",
+        #     partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING),
+        #     sort_key=dynamodb.Attribute(name="form_id", type=dynamodb.AttributeType.STRING),
+        #     )
+
+        conversations_table.grant_write_data(lambda_create_form)

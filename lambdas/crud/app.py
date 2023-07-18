@@ -1,13 +1,14 @@
 import json
 
-# import os
+import os
 import random
 import string
 from http import HTTPStatus
 
 # from time import gmtime, strftime
 
-# import boto3
+import boto3
+
 # from botocore.exceptions import ClientError
 
 # from langchain.llms import OpenAI
@@ -113,10 +114,21 @@ SECRET_KEY_OPENAI_KEY = "open_ai_key"
 def lambda_create_form(event, context):
     print("lambda_create_form Handler started")
 
-    body = event.get("body")
+    body = json.loads(event.get("body"))
+    body["id"] = str(body["id"])
     print(body)
 
     random_id = "".join(random.choices(string.ascii_lowercase, k=10))
+
+    dynamodb = boto3.resource("dynamodb")
+
+    table_name = os.environ["CONVERSATION_TABLE_NAME"]
+    print("CONVERSATION_TABLE_NAME", table_name)
+
+    table = dynamodb.Table(table_name)
+
+    table.put_item(Item=body)
+    print("Successful put to the table")
 
     try:
         result = {"body": body, "random_id": random_id}
