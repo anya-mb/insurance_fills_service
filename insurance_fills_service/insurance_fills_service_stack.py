@@ -19,7 +19,6 @@ from os.path import dirname
 
 from insurance_fills_service.constructs.user import UsersStack
 
-
 DIRNAME = dirname(dirname(__file__))
 
 
@@ -81,22 +80,23 @@ class InsuranceFillsServiceStack(Stack):
             ),
         )
 
-        # Outputs
-        CfnOutput(
-            self,
-            "API Endpoint",
-            description="API Endpoint",
-            value=http_api.api_endpoint,
-        )
-
+        # table to store conversation_id and conversation
         conversations_table = dynamodb.Table(
             self,
             "ConversationsTable",
             partition_key=dynamodb.Attribute(
-                name="id", type=dynamodb.AttributeType.STRING
+                name="conversation_id", type=dynamodb.AttributeType.STRING
             ),
-            table_name=f"ConversationsTable-{stage}",
+            table_name=f"ConversationsTable{stage}",
         )
+        # # table to store final filled forms
+        # filled_forms_table = dynamodb.Table(
+        #     self,
+        #     "FilledFormsTable",
+        #     partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING),
+        #     sort_key=dynamodb.Attribute(name="form_id", type=dynamodb.AttributeType.STRING),
+        #     table_name=f"FilledFormsTable{stage}",
+        # )
 
         # POST create forms lambda
         lambda_create_form = lambda_.Function(
@@ -110,7 +110,7 @@ class InsuranceFillsServiceStack(Stack):
             environment={"CONVERSATION_TABLE_NAME": conversations_table.table_name},
         )
 
-        # Add a route to GET /
+        # Add a route to POST /form
         http_api.add_routes(
             path="/form",
             methods=[_apigw.HttpMethod.POST],
@@ -118,10 +118,40 @@ class InsuranceFillsServiceStack(Stack):
                 "LambdaProxyIntegration", handler=lambda_create_form
             ),
         )
-
-        # filled_forms_table = dynamodb.Table(self, "FilledFormsTable",
-        #     partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING),
-        #     sort_key=dynamodb.Attribute(name="form_id", type=dynamodb.AttributeType.STRING),
-        #     )
-
         conversations_table.grant_write_data(lambda_create_form)
+
+        # POST create forms lambda
+        lambda_update_form = lambda_.Function(
+            self,
+            "InsuranceFunctionUpdateForm",
+            function_name=f"fill_insurance_function_update_form_{stage}",
+            runtime=lambda_.Runtime.PYTHON_3_9,
+            code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/crud")),
+            handler="app.lambda_update_form",
+            timeout=Duration.seconds(30),
+            environment={
+                "CONVERSATION_TABLE_NAME": conversations_table.table_name,
+                # "FILLED_FORMS_TABLE_NAME": filled_forms_table.table_name,
+            },
+        )
+
+        # Add a route to POST /form/{conversation_id}
+        http_api.add_routes(
+            path="/form/{conversation_id}",
+            methods=[_apigw.HttpMethod.POST],
+            integration=_integrations.HttpLambdaIntegration(
+                "LambdaProxyIntegration", handler=lambda_update_form
+            ),
+        )
+
+        conversations_table.grant_read_write_data(lambda_update_form)
+
+        # filled_forms_table.grant_read_write_data(lambda_update_form)
+
+        # Outputs
+        CfnOutput(
+            self,
+            "API Endpoint",
+            description="API Endpoint",
+            value=http_api.api_endpoint,
+        )
