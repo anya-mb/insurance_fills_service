@@ -87,11 +87,15 @@ def update_conversation_in_dynamodb(
     return chat_history
 
 
-def generate_assistant_response(
-    additional_conversation: dict, chat_history: list
-) -> (bool, str):
-    is_finished = False
-    next_question = "Next question"
+def generate_assistant_response(chat_history: list) -> (bool, str):
+    is_finished = True
+    next_question = {
+        "first_name": "Bob",
+        "last_name": "Smith",
+        "age": 24,
+        "type_of_insurance": "Auto",
+        "phone_number": 9876543210,
+    }
     return is_finished, next_question
 
 
@@ -106,11 +110,11 @@ def lambda_update_form(event, context):
         additional_conversation = json.loads(event.get("body"))
         print("additional_conversation:", additional_conversation)
 
-        table_name = os.environ["CONVERSATION_TABLE_NAME"]
-        print("CONVERSATION_TABLE_NAME", table_name)
+        conversations_table_name = os.environ["CONVERSATION_TABLE_NAME"]
+        print("CONVERSATION_TABLE_NAME", conversations_table_name)
 
         chat_history = update_conversation_in_dynamodb(
-            table_name, conversation_id, additional_conversation
+            conversations_table_name, conversation_id, additional_conversation
         )
 
         response = {
@@ -120,6 +124,17 @@ def lambda_update_form(event, context):
                 "content-type": "application/json",
             },
         }
+
+        is_finished, value = generate_assistant_response(chat_history)
+
+        if is_finished:
+            filled_form = value
+            filled_form["conversation_id"] = conversation_id
+            forms_table_name = os.environ["FILLED_FORMS_TABLE_NAME"]
+            print("FILLED_FORMS_TABLE_NAME", forms_table_name)
+            save_to_dynamodb_table(forms_table_name, filled_form)
+        else:
+            print("Next question", value)
 
     except Exception as e:
         response = {

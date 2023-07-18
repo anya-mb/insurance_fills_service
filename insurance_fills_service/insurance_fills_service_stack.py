@@ -87,16 +87,18 @@ class InsuranceFillsServiceStack(Stack):
             partition_key=dynamodb.Attribute(
                 name="conversation_id", type=dynamodb.AttributeType.STRING
             ),
-            table_name=f"ConversationsTable{stage}",
+            table_name=f"InsuranceConversationsTable{stage}",
         )
-        # # table to store final filled forms
-        # filled_forms_table = dynamodb.Table(
-        #     self,
-        #     "FilledFormsTable",
-        #     partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING),
-        #     sort_key=dynamodb.Attribute(name="form_id", type=dynamodb.AttributeType.STRING),
-        #     table_name=f"FilledFormsTable{stage}",
-        # )
+        # table to store final filled forms
+        filled_forms_table = dynamodb.Table(
+            self,
+            "FilledFormsTable",
+            partition_key=dynamodb.Attribute(
+                name="conversation_id", type=dynamodb.AttributeType.STRING
+            ),
+            # sort_key=dynamodb.Attribute(name="form_id", type=dynamodb.AttributeType.STRING),
+            table_name=f"InsuranceFilledFormsTable{stage}",
+        )
 
         # POST create forms lambda
         lambda_create_form = lambda_.Function(
@@ -131,7 +133,7 @@ class InsuranceFillsServiceStack(Stack):
             timeout=Duration.seconds(30),
             environment={
                 "CONVERSATION_TABLE_NAME": conversations_table.table_name,
-                # "FILLED_FORMS_TABLE_NAME": filled_forms_table.table_name,
+                "FILLED_FORMS_TABLE_NAME": filled_forms_table.table_name,
             },
         )
 
@@ -146,7 +148,7 @@ class InsuranceFillsServiceStack(Stack):
 
         conversations_table.grant_read_write_data(lambda_update_form)
 
-        # filled_forms_table.grant_read_write_data(lambda_update_form)
+        filled_forms_table.grant_read_write_data(lambda_update_form)
 
         # Outputs
         CfnOutput(
