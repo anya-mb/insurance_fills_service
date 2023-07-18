@@ -1,3 +1,4 @@
+import os
 from constructs import Construct
 from aws_cdk import (
     Stack,
@@ -10,7 +11,7 @@ from aws_cdk import (
 import aws_cdk.aws_apigatewayv2_alpha as _apigw
 import aws_cdk.aws_apigatewayv2_integrations_alpha as _integrations
 
-from aws_cdk.aws_apigatewayv2_authorizers_alpha import HttpIamAuthorizer
+# from aws_cdk.aws_apigatewayv2_authorizers_alpha import HttpIamAuthorizer
 
 from os.path import dirname
 
@@ -57,7 +58,7 @@ class InsuranceFillsServiceStack(Stack):
         UsersStack(self, f"users-{stage}", stage)
 
         # Create the HTTP API with CORS
-        authorizer = HttpIamAuthorizer()
+        # authorizer = HttpIamAuthorizer()
         http_api = _apigw.HttpApi(
             self,
             "MyHttpApi",
@@ -66,7 +67,7 @@ class InsuranceFillsServiceStack(Stack):
                 allow_origins=["*"],
                 max_age=Duration.days(10),
             ),
-            default_authorizer=authorizer,
+            # default_authorizer=authorizer,
         )
 
         # Add a route to GET /
@@ -84,4 +85,25 @@ class InsuranceFillsServiceStack(Stack):
             "API Endpoint",
             description="API Endpoint",
             value=http_api.api_endpoint,
+        )
+
+        # POST create forms lambda
+        lambda_create_form = lambda_.Function(
+            self,
+            "InsuranceFunctionCreateForm",
+            function_name=f"fill_insurance_function_create_form_{stage}",
+            runtime=lambda_.Runtime.PYTHON_3_9,
+            code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/crud")),
+            handler="app.lambda_create_form",
+            timeout=Duration.seconds(30),
+            # environment={"BUCKET_NAME": bucket.bucket_name},
+        )
+
+        # Add a route to GET /
+        http_api.add_routes(
+            path="/form",
+            methods=[_apigw.HttpMethod.POST],
+            integration=_integrations.HttpLambdaIntegration(
+                "LambdaProxyIntegration", handler=lambda_create_form
+            ),
         )
