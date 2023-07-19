@@ -87,7 +87,7 @@ class InsuranceFillsServiceStack(Stack):
             partition_key=dynamodb.Attribute(
                 name="conversation_id", type=dynamodb.AttributeType.STRING
             ),
-            table_name=f"InsuranceConversationsTable{stage}",
+            # table_name=f"ConversationsInsuranceTable{stage}",
         )
         # table to store final filled forms
         filled_forms_table = dynamodb.Table(
@@ -96,8 +96,10 @@ class InsuranceFillsServiceStack(Stack):
             partition_key=dynamodb.Attribute(
                 name="conversation_id", type=dynamodb.AttributeType.STRING
             ),
-            # sort_key=dynamodb.Attribute(name="form_id", type=dynamodb.AttributeType.STRING),
-            table_name=f"InsuranceFilledFormsTable{stage}",
+            # sort_key=dynamodb.Attribute(
+            #     name="create_time", type=dynamodb.AttributeType.STRING
+            # ),
+            # table_name=f"FilledFormsInsuranceTable{stage}",
         )
 
         # POST create forms lambda
@@ -149,6 +151,31 @@ class InsuranceFillsServiceStack(Stack):
         conversations_table.grant_read_write_data(lambda_update_form)
 
         filled_forms_table.grant_read_write_data(lambda_update_form)
+
+        # GET form lambda
+        lambda_get_form = lambda_.Function(
+            self,
+            "InsuranceFunctionGetForm",
+            function_name=f"fill_insurance_function_get_form_{stage}",
+            runtime=lambda_.Runtime.PYTHON_3_9,
+            code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/crud")),
+            handler="app.lambda_get_form",
+            timeout=Duration.seconds(30),
+            environment={
+                "FILLED_FORMS_TABLE_NAME": filled_forms_table.table_name,
+            },
+        )
+
+        # Add a route to GET /form
+        http_api.add_routes(
+            path="/form/{conversation_id}",
+            methods=[_apigw.HttpMethod.GET],
+            integration=_integrations.HttpLambdaIntegration(
+                "LambdaProxyIntegration", handler=lambda_get_form
+            ),
+        )
+
+        filled_forms_table.grant_read_data(lambda_get_form)
 
         # Outputs
         CfnOutput(

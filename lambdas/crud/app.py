@@ -4,9 +4,7 @@ import random
 import string
 from http import HTTPStatus
 import boto3
-
-# SECRET_NAME = "insurance_fills_secrets"
-# SECRET_KEY_OPENAI_KEY = "open_ai_key"
+from time import gmtime, strftime
 
 
 def get_random_id() -> str:
@@ -92,14 +90,14 @@ def generate_assistant_response(chat_history: list) -> (bool, str):
     next_question = {
         "first_name": "Bob",
         "last_name": "Smith",
-        "age": 24,
+        "age": "24",
         "type_of_insurance": "Auto",
-        "phone_number": 9876543210,
+        "phone_number": "9876543210",
     }
     return is_finished, next_question
 
 
-def lambda_update_form(event, context):
+def lambda_update_form(event, context) -> dict:
     print("lambda_update_form Handler started")
 
     try:
@@ -117,24 +115,73 @@ def lambda_update_form(event, context):
             conversations_table_name, conversation_id, additional_conversation
         )
 
-        response = {
-            "statusCode": HTTPStatus.OK.value,
-            "body": json.dumps(chat_history, indent=2),
-            "headers": {
-                "content-type": "application/json",
-            },
-        }
-
         is_finished, value = generate_assistant_response(chat_history)
 
         if is_finished:
             filled_form = value
             filled_form["conversation_id"] = conversation_id
+
+            form_create_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+            filled_form["create_time"] = form_create_time
+
             forms_table_name = os.environ["FILLED_FORMS_TABLE_NAME"]
             print("FILLED_FORMS_TABLE_NAME", forms_table_name)
             save_to_dynamodb_table(forms_table_name, filled_form)
+
+            response = {
+                "statusCode": HTTPStatus.OK.value,
+                "body": json.dumps(filled_form, indent=2),
+                "headers": {
+                    "content-type": "application/json",
+                },
+            }
         else:
+            result = {"next_question": value}
+            response = {
+                "statusCode": HTTPStatus.OK.value,
+                "body": json.dumps(result, indent=2),
+                "headers": {
+                    "content-type": "application/json",
+                },
+            }
             print("Next question", value)
+
+    except Exception as e:
+        response = {
+            "statusCode": HTTPStatus.INTERNAL_SERVER_ERROR.value,
+            "body": f"Exception={e}",
+            "headers": {
+                "content-type": "text/plain",
+            },
+        }
+
+    return response
+
+
+def lambda_get_form(event, context) -> dict:
+    print("lambda_get_form Handler started")
+
+    try:
+        forms_table_name = os.environ["FILLED_FORMS_TABLE_NAME"]
+        print("FILLED_FORMS_TABLE_NAME", forms_table_name)
+        forms_table = get_dynamodb_table(forms_table_name)
+
+        conversation_id = event.get("pathParameters")["conversation_id"]
+        print("conversation_id:", conversation_id)
+
+        # Retrieve the item from DynamoDB
+        response = forms_table.get_item(Key={"conversation_id": conversation_id})
+        print("response", response)
+        filled_form = response.get("Item", {})
+        print("filled_form from table", filled_form)
+
+        response = {
+            "statusCode": HTTPStatus.OK.value,
+            "body": json.dumps(filled_form, indent=2),
+            "headers": {
+                "content-type": "application/json",
+            },
+        }
 
     except Exception as e:
         response = {
