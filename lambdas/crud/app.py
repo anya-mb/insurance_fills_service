@@ -136,7 +136,10 @@ def lambda_update_form(event, context) -> dict:
                 },
             }
         else:
-            result = {"next_question": value}
+            result = {
+                "next_question": value,
+                "is_finished": is_finished,
+            }
             response = {
                 "statusCode": HTTPStatus.OK.value,
                 "body": json.dumps(result, indent=2),
@@ -144,7 +147,13 @@ def lambda_update_form(event, context) -> dict:
                     "content-type": "application/json",
                 },
             }
+            additional_conversation = {"role": "assistant", "content": value}
+            chat_history = update_conversation_in_dynamodb(
+                conversations_table_name, conversation_id, additional_conversation
+            )
+
             print("Next question", value)
+            print("chat_history updated with next question", chat_history)
 
     except Exception as e:
         response = {
