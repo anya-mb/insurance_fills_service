@@ -22,6 +22,7 @@ aws-cdk-aws-apigatewayv2-authorizers-alpha = "^2.87.0a0"
 requests-aws4auth = "^1.2.3"
 pre-commit = "^3.3.3"
 tenacity = "^8.2.2"
+streamlit-chat = "^0.1.1"
 
 
 [build-system]

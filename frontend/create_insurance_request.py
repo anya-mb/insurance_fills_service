@@ -1,15 +1,53 @@
+import os
+
 import streamlit as st
 import string
 import sys
 import random
+from dotenv import load_dotenv
+import requests
+import json
+
+load_dotenv()
+
+AWS_API_LINK = os.environ["AWS_API_LINK"]
 
 
 def process_customer_input(user_input: str) -> dict:
     is_finished = random.random() <= 0.3
+    # forms_link = AWS_API_LINK + 'form/{conversation_id}'
+    # response = requests.get(forms_link, params={"conversation_id": 'vfdpvlsdlb'})
+
+    # Define the URL
+    url = AWS_API_LINK
+
+    # Define the headers
+    headers = {"Content-Type": "application/json"}
+
+    # Define the data
+    data = [
+        {
+            "role": "user",
+            "content": "Hi, I am Bob Smith. I am looking for a car insurance. Do you offer it?",
+        }
+    ]
+
+    # Convert the data to JSON format
+    data_json = json.dumps(data)
+
+    # Send the POST request
+    response = requests.post(url, headers=headers, data=data_json)
+
+    # Print the response
+    print(response.text)
+
     if is_finished:
-        return {"is_finished": True, "response": "Form is filled and saved, thanks"}
+        return {
+            "is_finished": True,
+            "response": response,
+        }  #  "Form is filled and saved, thanks"}
     else:
-        return {"is_finished": False, "response": user_input[::-1]}
+        return {"is_finished": False, "response": response}  #  user_input[::-1]}
 
 
 def start_claim() -> str:
@@ -46,7 +84,9 @@ if not is_form_filled and user_input:
     history.append(f"You: {user_input}")
 
     bot_response = process_customer_input(user_input)
-    history.append(f'Bot: {bot_response["response"]}')
+    # body = bot_response__dict__
+    history.append(f"Bot: {bot_response}")
+    # history.append(f'Bot body: {body}')# bot_response["response"]
     st.session_state["IS_FORM_FILLED"] = bot_response["is_finished"]
 
 
