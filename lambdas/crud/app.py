@@ -86,13 +86,19 @@ def update_conversation_in_dynamodb(
 
 
 def generate_assistant_response(chat_history: list) -> (bool, str):
-    is_finished = True
+    # is_finished = True
+    # next_question = {
+    #     "first_name": "Bob",
+    #     "last_name": "Smith",
+    #     "age": "24",
+    #     "type_of_insurance": "Auto",
+    #     "phone_number": "9876543210",
+    # }
+    is_finished = False
     next_question = {
-        "first_name": "Bob",
-        "last_name": "Smith",
-        "age": "24",
-        "type_of_insurance": "Auto",
-        "phone_number": "9876543210",
+        "role": "assistant",
+        "content": "Yes, we do offer car insurance. To complete your application, \
+        I would need some additional information. Could you please provide your phone number?",
     }
     return is_finished, next_question
 
@@ -117,6 +123,19 @@ def lambda_update_form(event, context) -> dict:
 
         is_finished, value = generate_assistant_response(chat_history)
 
+        result = {
+            "next_question": value,
+            "is_finished": is_finished,
+        }
+
+        response = {
+            "statusCode": HTTPStatus.OK.value,
+            "body": json.dumps(result, indent=2),
+            "headers": {
+                "content-type": "application/json",
+            },
+        }
+
         if is_finished:
             filled_form = value
             filled_form["conversation_id"] = conversation_id
@@ -128,25 +147,7 @@ def lambda_update_form(event, context) -> dict:
             print("FILLED_FORMS_TABLE_NAME", forms_table_name)
             save_to_dynamodb_table(forms_table_name, filled_form)
 
-            response = {
-                "statusCode": HTTPStatus.OK.value,
-                "body": json.dumps(filled_form, indent=2),
-                "headers": {
-                    "content-type": "application/json",
-                },
-            }
         else:
-            result = {
-                "next_question": value,
-                "is_finished": is_finished,
-            }
-            response = {
-                "statusCode": HTTPStatus.OK.value,
-                "body": json.dumps(result, indent=2),
-                "headers": {
-                    "content-type": "application/json",
-                },
-            }
             additional_conversation = {"role": "assistant", "content": value}
             chat_history = update_conversation_in_dynamodb(
                 conversations_table_name, conversation_id, additional_conversation
