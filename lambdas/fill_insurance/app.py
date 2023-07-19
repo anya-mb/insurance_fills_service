@@ -105,3 +105,33 @@ def handler(event, context):
         }
 
     return response
+
+
+def lambda_create_form(event, context):
+    print("lambda_create_form Handler started")
+
+    body = event.get("body")
+    print(body)
+
+    random_id = "".join(random.choices(string.ascii_lowercase, k=10))
+
+    try:
+        result = {"body": body, "random_id": random_id}
+        response = {
+            "statusCode": HTTPStatus.OK.value,
+            "body": json.dumps(result, indent=2),
+            "headers": {
+                "content-type": "application/json",
+            },
+        }
+
+    except Exception as e:
+        response = {
+            "statusCode": HTTPStatus.INTERNAL_SERVER_ERROR.value,
+            "body": f"Exception={e}",
+            "headers": {
+                "content-type": "text/plain",
+            },
+        }
+
+    return response
