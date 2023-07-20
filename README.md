@@ -64,5 +64,5 @@ DOCKER_DEFAULT_PLATFORM=linux/amd64 cdk deploy  --all
 
 To run streamlit frontend:
 ```
-streamlit run frontend/create_insurance_request.py
+streamlit run frontend/app.py
 ```
