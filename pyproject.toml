@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "insurance_fills_service"}]
 
 [tool.poetry.dependencies]
-python = ">=3.8.1,<4.0"
+python = ">=3.10,<4.0"
 boto3 = "^1.28.1"
 aws-cdk-aws-apigatewayv2-alpha = "^2.87.0a0"
 aws-cdk-aws-apigatewayv2-integrations-alpha = "^2.87.0a0"
@@ -23,13 +23,12 @@ requests-aws4auth = "^1.2.3"
 pre-commit = "^3.3.3"
 tenacity = "^8.2.2"
 streamlit-chat = "^0.1.1"
+streamlit = "^1.24.1"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-
 # https://beta.ruff.rs/docs/configuration/
 [tool.ruff]
 line-length = 120
