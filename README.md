@@ -1,23 +1,32 @@
 ## Insurance Fills Service
 
-This service allows a user (the one who wants to make a claim) to describe the claim / problem, answer additional questions and the result claim will be stored in the Insurance company database.
+This service empowers users, typically insurance claimants, to detail their claim or describe their issue. After answering a few supplementary questions, their claim data will be securely stored in the insurance company's database.
 
-The project is done as infrastructure-as-a-code using AWS CDK which creates CloudFormation template. AWS Lambda is deployed as a Docker image because it allows to store 10Gb in dependencies, otherwise the limit is up to 128 Mb for all dependencies.
+The project is constructed as Infrastructure-as-Code (IaC), utilizing the AWS Cloud Development Kit (CDK), which generates a CloudFormation template. AWS Lambda is deployed via a Docker image, a necessary choice due to its capacity to accommodate up to 10GB in dependencies, as compared to a modest limit of 128MB for all dependencies otherwise.
 
-Lambda goes to OpenAI language models for parcing the user answer and ask additional questions. Then the claimed is stored in AWS S3 bucket.
+The Lambda function interfaces with OpenAI language models, which parse the user's responses and pose follow-up questions. Following this interaction, the claim data is stored in AWS DynamoDB. Notably, all conversation data is also retained in DynamoDB for future reference and analysis.
 
-Add OpenAI api key `OPENAI_API_KEY` to `.env` file to run `notebooks/` files.
+To execute the files under the notebooks/ directory, add the OpenAI API key OPENAI_API_KEY to the .env file. This will enable the seamless interaction with OpenAI's language models.
 
 ```mermaid
 graph LR
-  UI -- SigV4 signed --> APIG[API Gateway]
+  UI -- GET/POST/DELETE --> APIG[API Gateway]
   subgraph aws[AWS account]
-    APIG --> Lambda[AWS Lambda]
-    Lambda -- Stores data --> S3[S3 bucket]
+    APIG --> Lambda[AWS Lambdas]
+    Lambda -- Stores conversations --> DDB[ConversationsTable]
+    Lambda -- Stores filled forms --> DDB2[FilledFormsTable]
+    subgraph DynamoDB
+        DDB
+
+    end
+    subgraph DynamoDB2
+
+        DDB2
+    end
     Lambda -- Loads credentials --> SecretsM[AWS SecretsManager]
 
   end
-Lambda -- uses GPT-3.5 --> OpenAI[OpenAI API]
+  Lambda -- uses GPT-4 --> OpenAI[OpenAI API]
 ```
 
 ## Setup
