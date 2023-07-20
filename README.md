@@ -59,3 +59,10 @@ To deploy on Mac OS:
 ```
 DOCKER_DEFAULT_PLATFORM=linux/amd64 cdk deploy  --all
 ```
+
+### Run
+
+To run streamlit frontend:
+```
+streamlit run frontend/app.py
+```
