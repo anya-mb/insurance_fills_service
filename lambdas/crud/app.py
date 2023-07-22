@@ -1,11 +1,14 @@
 import json
+import logging
 import os
 import random
 import string
-import logging
 from http import HTTPStatus
-import boto3
 from time import gmtime, strftime
+
+import boto3
+
+from constants import SYSTEM_SETUP_PROMPT
 
 # Create logger
 logger = logging.getLogger(__name__)
@@ -44,18 +47,24 @@ def lambda_create_form(event, context):
     """
     logger.info("lambda_create_form Handler started")
     try:
-        conversation = json.loads(event.get("body"))
-        logger.debug(f"conversation: {conversation}")
+        conversation = [{"role": "system", "content": SYSTEM_SETUP_PROMPT}]
+        user_input = json.loads(event.get("body"))[0]
+
+        conversation.append(user_input)
+
+        logger.debug(f"conversation: {user_input}")
 
         random_id = get_random_id()
-        data_to_add_to_db = {"conversation_id": random_id, "conversation": conversation}
+
+        input_dict = {"conversation_id": random_id, "conversation": conversation}
+
         table_name = os.environ["CONVERSATION_TABLE_NAME"]
 
-        save_to_dynamodb_table(table_name, data_to_add_to_db)
+        save_to_dynamodb_table(table_name, input_dict)
 
         response = {
             "statusCode": HTTPStatus.OK.value,
-            "body": json.dumps(data_to_add_to_db, indent=2),
+            "body": json.dumps(input_dict, indent=2),
             "headers": {"content-type": "application/json"},
         }
     except Exception as e:
