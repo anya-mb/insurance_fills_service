@@ -1,6 +1,6 @@
 import json
 
-import openai
+# import openai
 import requests
 import streamlit as st
 from streamlit_chat import message
@@ -20,7 +20,7 @@ st.markdown(
 )
 
 # Set org ID and API key
-openai.api_key = os.environ["OPENAI_API_KEY"]
+# openai.api_key = os.environ["OPENAI_API_KEY"]
 
 # Initialise session state variables
 if "generated" not in st.session_state:
@@ -29,7 +29,7 @@ if "past" not in st.session_state:
     st.session_state["past"] = []
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        {"role": "system", "content": "You are a helpful assistant."}
+        # {"role": "system", "content": "You are a helpful assistant."},
     ]
 
 
@@ -55,7 +55,7 @@ def send_response(conversation_id: str, user_reply: str) -> dict:
     Response looks like this:
         {
         'next_question': 'Question',
-        'is_finished': False
+        'is_finished': bool
         }
 
     :param conversation_id:

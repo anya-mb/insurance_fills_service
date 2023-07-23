@@ -87,7 +87,6 @@ class InsuranceFillsServiceStack(Stack):
             partition_key=dynamodb.Attribute(
                 name="conversation_id", type=dynamodb.AttributeType.STRING
             ),
-            # table_name=f"ConversationsInsuranceTable{stage}",
         )
         # table to store final filled forms
         filled_forms_table = dynamodb.Table(
@@ -99,7 +98,6 @@ class InsuranceFillsServiceStack(Stack):
             # sort_key=dynamodb.Attribute(
             #     name="create_time", type=dynamodb.AttributeType.STRING
             # ),
-            # table_name=f"FilledFormsInsuranceTable{stage}",
         )
 
         # POST create forms lambda
@@ -139,6 +137,8 @@ class InsuranceFillsServiceStack(Stack):
             },
         )
 
+        secret.grant_read(lambda_update_form)
+
         # Add a route to POST /form/{conversation_id}
         http_api.add_routes(
             path="/form/{conversation_id}",
@@ -149,7 +149,6 @@ class InsuranceFillsServiceStack(Stack):
         )
 
         conversations_table.grant_read_write_data(lambda_update_form)
-
         filled_forms_table.grant_read_write_data(lambda_update_form)
 
         # GET form lambda
