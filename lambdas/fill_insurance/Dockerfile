@@ -8,6 +8,6 @@ RUN pip install -r requirements.txt
 
 RUN echo ${LAMBDA_TASK_ROOT}
 
-COPY app.py ${LAMBDA_TASK_ROOT}
+COPY update.py ${LAMBDA_TASK_ROOT}
 
-CMD ["app.handler"]
+CMD ["update.lambda_update"]

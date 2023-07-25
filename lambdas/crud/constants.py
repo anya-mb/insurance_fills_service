@@ -18,35 +18,3 @@ SYSTEM_SETUP_PROMPT = """
 
     Please ask one question at a time.
     """
-
-FUNCTIONS = [
-    {
-        "name": "save_users_questionnaire",
-        "description": "If user responded all questions, store fully filled questionnaire to the database",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "user_answers": {
-                    "type": "object",
-                    "description": "Keys of the dict are questions to the user and values are user's responses \n "
-                    "to the coresponding questions",
-                },
-            },
-            "required": ["user_answers"],
-        },
-    },
-    {
-        "name": "ask_follow_up_question",
-        "description": "If the user didn't answer all the questions, generates an additional question to ask user.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "next_question": {
-                    "type": "string",
-                    "description": "Next question which we will ask user to clarify their response",
-                },
-            },
-            "required": ["next_question"],
-        },
-    },
-]

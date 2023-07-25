@@ -1,38 +1,82 @@
-# import json
+import json
+import os
 import logging
-
-# import os
-import random
-import string
 from http import HTTPStatus
-from time import gmtime, strftime
-
 import boto3
-
-# from constants import SYSTEM_SETUP_PROMPT
+from botocore.exceptions import ClientError
+from time import gmtime, strftime
 
 # from GPT4_assistant import Chat
 
-import os
-import json
-import openai
+# import openai
 import requests
-from dotenv import load_dotenv
+
+# from dotenv import load_dotenv
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 
-from constants import FUNCTIONS, SYSTEM_SETUP_PROMPT
+# from constants import FUNCTIONS, SYSTEM_SETUP_PROMPT
 
+GPT_MODEL = "gpt-4-0613"
 
 # Create logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def get_random_id() -> str:
-    """
-    Function to generate a random string of 10 lowercase alphabets
-    """
-    return "".join(random.choices(string.ascii_lowercase, k=10))
+# openai functions
+FUNCTIONS = [
+    {
+        "name": "save_users_questionnaire",
+        "description": "If user responded all questions, store fully filled questionnaire to the database",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "user_answers": {
+                    "type": "object",
+                    "description": "Keys of the dict are questions to the user and values are user's responses \n "
+                    "to the coresponding questions",
+                },
+            },
+            "required": ["user_answers"],
+        },
+    },
+    {
+        "name": "ask_follow_up_question",
+        "description": "If the user didn't answer all the questions, generates an additional question to ask user.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "next_question": {
+                    "type": "string",
+                    "description": "Next question which we will ask user to clarify their response",
+                },
+            },
+            "required": ["next_question"],
+        },
+    },
+]
+
+
+SECRET_NAME = "insurance_fills_secrets"
+SECRET_KEY_OPENAI_KEY = "open_ai_key"
+
+
+def get_secret():
+    region_name = "us-east-1"
+
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(service_name="secretsmanager", region_name=region_name)
+
+    try:
+        get_secret_value_response = client.get_secret_value(SecretId=SECRET_NAME)
+    except ClientError as e:
+        raise e
+
+    # Decrypts secret using the associated KMS key.
+    secret = get_secret_value_response["SecretString"]
+
+    return json.loads(secret)
 
 
 def get_dynamodb_table(table_name: str) -> object:
@@ -47,9 +91,6 @@ def get_dynamodb_table(table_name: str) -> object:
 def save_to_dynamodb_table(table_name: str, data_to_add: dict):
     """
     Function to save a dictionary to DynamoDB table
-
-    data_to_add looks like:
-    {"role": "some role", "content": "some content"}
     """
     table = get_dynamodb_table(table_name)
     table.put_item(Item=data_to_add)
@@ -57,49 +98,11 @@ def save_to_dynamodb_table(table_name: str, data_to_add: dict):
     logger.debug(f"Added data: {data_to_add}")
 
 
-def lambda_create_form(event, context):
-    """
-    Lambda function to create form
-    """
-    logger.info("lambda_create_form Handler started")
-    try:
-        conversation = [{"role": "system", "content": SYSTEM_SETUP_PROMPT}]
-        # user_input = json.loads(event.get("body"))[0]
-
-        # conversation.append(user_input)
-
-        logger.debug(f"conversation: {conversation}")
-
-        random_id = get_random_id()
-
-        input_dict = {"conversation_id": random_id, "conversation": conversation}
-
-        table_name = os.environ["CONVERSATION_TABLE_NAME"]
-
-        save_to_dynamodb_table(table_name, input_dict)
-
-        response = {
-            "statusCode": HTTPStatus.OK.value,
-            "body": json.dumps(input_dict, indent=2),
-            "headers": {"content-type": "application/json"},
-        }
-    except Exception as e:
-        response = {
-            "statusCode": HTTPStatus.INTERNAL_SERVER_ERROR.value,
-            "body": f"Exception={e}",
-            "headers": {"content-type": "text/plain"},
-        }
-    return response
-
-
 def update_conversation_in_dynamodb(
     table_name: str, conversation_id: str, additional_conversation: list
-) -> dict:
+) -> list:
     """
     Function to update a conversation in DynamoDB
-
-    additional_conversation looks like
-    [{"role": "user", "content": "user_prompt"}]
     """
     table = get_dynamodb_table(table_name)
     response = table.get_item(Key={"conversation_id": conversation_id})
@@ -112,28 +115,24 @@ def update_conversation_in_dynamodb(
     return chat_history
 
 
-SECRET_NAME = "insurance_fills_secrets"
-SECRET_KEY_OPENAI_KEY = "open_ai_key"
-
-
-def generate_assistant_response(chat_history: list) -> (bool, str):
+def generate_assistant_response(chat_history: list, openai_key) -> (bool, str):
     """
     Function to generate assistant response
     """
-    # chat = Chat()
-    # chat.upload_conversation_history(chat_history)
-    # is_finished, next_question = chat.generate_response_for_user()
+    chat = Chat()
+    chat.upload_conversation_history(chat_history)
+    is_finished, next_question = chat.generate_response_for_user(openai_key)
 
-    is_finished = False
-    next_question = {
-        "role": "assistant",
-        "content": "Yes, we do offer car insurance. To complete your application, \
-        I would need some additional information. Could you please provide your phone number?",
-    }
+    # is_finished = False
+    # next_question = {
+    #     "role": "assistant",
+    #     "content": "Yes, we do offer car insurance. To complete your application, \
+    #     I would need some additional information. Could you please provide your phone number?",
+    # }
     return is_finished, next_question
 
 
-def lambda_update_form(event, context) -> dict:
+def lambda_update(event, context) -> dict:
     """
     Lambda function to update form
     """
@@ -147,7 +146,10 @@ def lambda_update_form(event, context) -> dict:
             conversations_table_name, conversation_id, additional_conversation
         )
 
-        is_finished, value = generate_assistant_response(chat_history)
+        openai_key = get_secret()[SECRET_KEY_OPENAI_KEY]
+        # openai.api_key = openai_key
+
+        is_finished, value = generate_assistant_response(chat_history, openai_key)
         result = {"next_question": value, "is_finished": is_finished}
 
         response = {
@@ -179,44 +181,13 @@ def lambda_update_form(event, context) -> dict:
     return response
 
 
-def lambda_get_form(event, context) -> dict:
-    """
-    Lambda function to get form
-    """
-    logger.info("lambda_get_form Handler started")
-    try:
-        forms_table_name = os.environ["FILLED_FORMS_TABLE_NAME"]
-        forms_table = get_dynamodb_table(forms_table_name)
-
-        conversation_id = event.get("pathParameters")["conversation_id"]
-        response = forms_table.get_item(Key={"conversation_id": conversation_id})
-        filled_form = response.get("Item", {})
-
-        response = {
-            "statusCode": HTTPStatus.OK.value,
-            "body": json.dumps(filled_form, indent=2),
-            "headers": {"content-type": "application/json"},
-        }
-    except Exception as e:
-        response = {
-            "statusCode": HTTPStatus.INTERNAL_SERVER_ERROR.value,
-            "body": f"Exception={e}",
-            "headers": {"content-type": "text/plain"},
-        }
-    return response
-
-
-GPT_MODEL = "gpt-4-0613"
-
-load_dotenv(".env")
-openai.api_key = os.environ["OPENAI_API_KEY"]
-
-
 @retry(wait=wait_random_exponential(min=1, max=40), stop=stop_after_attempt(3))
-def chat_completion_request(messages, functions=None, model=GPT_MODEL):
+def chat_completion_request(messages, openai_key, functions=None, model=GPT_MODEL):
+    # openai.api_key = openai_key
+
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + openai.api_key,
+        "Authorization": "Bearer " + openai_key,  # openai.api_key,
     }
     json_data = {"model": model, "messages": messages}
     if functions is not None:
@@ -237,7 +208,7 @@ def chat_completion_request(messages, functions=None, model=GPT_MODEL):
 class Chat:
     def __init__(self):
         self.conversation_history = []
-        self._add_prompt("system", SYSTEM_SETUP_PROMPT)
+        # self._add_prompt("system", SYSTEM_SETUP_PROMPT)
 
     def _add_prompt(self, role: str, content: str):
         message = {"role": role, "content": content}
@@ -261,19 +232,26 @@ class Chat:
     def upload_conversation_history(self, conversation_history: list):
         self.conversation_history = conversation_history
 
-    def generate_response_for_user(self, functions: list = FUNCTIONS) -> (bool, str):
+    def generate_response_for_user(
+        self, openai_key, functions: list = FUNCTIONS
+    ) -> (bool, str):
 
         chat_response = chat_completion_request(
-            self.conversation_history, functions=functions
+            self.conversation_history, openai_key, functions=functions
         )
 
         if chat_response is not None:
+            print("chat_response:")
+            print(chat_response)
+            print(chat_response.json())
+            print(chat_response.error)
+
             response_content = chat_response.json()["choices"][0]["message"]
 
             message = chat_response.json()["choices"][0]["message"]["content"]
 
-            #         print("message:")
-            #         print(message)
+            print("message:")
+            print(message)
 
             if message is not None:
                 chat_finished = False
@@ -288,8 +266,8 @@ class Chat:
                     questionnaire = json.loads(
                         response_content["function_call"]["arguments"]
                     )
-                    #                 print("Result questionnaire:")
-                    #                 print(questionnaire)
+                    print("Result questionnaire:")
+                    print(questionnaire)
 
                     chat_finished = True
                     return chat_finished, questionnaire
@@ -301,8 +279,8 @@ class Chat:
                     next_question = json.loads(
                         response_content["function_call"]["arguments"]
                     )["next_question"]
-                    #                 print("Next question:")
-                    #                 print(next_question)
+                    print("Next question:")
+                    print(next_question)
 
                     chat_finished = False
                     return chat_finished, next_question
