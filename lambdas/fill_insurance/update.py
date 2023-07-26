@@ -5,22 +5,8 @@ from http import HTTPStatus
 import boto3
 from botocore.exceptions import ClientError
 from time import gmtime, strftime
-
-# from GPT4_assistant import Chat
-
-# import openai
 import requests
-
-# from dotenv import load_dotenv
 from tenacity import retry, wait_random_exponential, stop_after_attempt
-
-# from constants import FUNCTIONS, SYSTEM_SETUP_PROMPT
-
-GPT_MODEL = "gpt-4-0613"
-
-# Create logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 # openai functions
@@ -59,6 +45,12 @@ FUNCTIONS = [
 
 SECRET_NAME = "insurance_fills_secrets"
 SECRET_KEY_OPENAI_KEY = "open_ai_key"
+
+GPT_MODEL = "gpt-4-0613"
+
+# Create logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def get_secret():
