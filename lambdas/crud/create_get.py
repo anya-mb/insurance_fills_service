@@ -5,12 +5,20 @@ import string
 import logging
 from http import HTTPStatus
 import boto3
+from decimal import Decimal
 
 from constants import SYSTEM_SETUP_PROMPT
 
 # Create logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Decimal):
+            return str(o)
+        return super(DecimalEncoder, self).default(o)
 
 
 def get_random_id() -> str:
@@ -80,10 +88,15 @@ def lambda_get_form(event, context) -> dict:
         conversation_id = event.get("pathParameters")["conversation_id"]
         response = forms_table.get_item(Key={"conversation_id": conversation_id})
         filled_form = response.get("Item", {})
+        print("filled_form")
+        print(filled_form)
+        json_filled_form = json.dumps(filled_form, cls=DecimalEncoder)
+        print("json_filled_form")
+        print(json_filled_form)
 
         response = {
             "statusCode": HTTPStatus.OK.value,
-            "body": json.dumps(filled_form, indent=2),
+            "body": json.dumps(json_filled_form, indent=2),
             "headers": {"content-type": "application/json"},
         }
     except Exception as e:

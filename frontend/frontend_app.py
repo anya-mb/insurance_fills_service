@@ -19,18 +19,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Set org ID and API key
-# openai.api_key = os.environ["OPENAI_API_KEY"]
-
 # Initialise session state variables
 if "generated" not in st.session_state:
     st.session_state["generated"] = []
 if "past" not in st.session_state:
     st.session_state["past"] = []
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [
-        # {"role": "system", "content": "You are a helpful assistant."},
-    ]
+    st.session_state["messages"] = []
 
 
 # reset everything
@@ -67,7 +62,8 @@ def send_response(conversation_id: str, user_reply: str) -> dict:
     data_json = get_user_prompt_data_json(user_reply)
 
     response = requests.post(url, headers=HEADERS, data=data_json)
-
+    print("response")
+    print(response)
     return response.json()
 
 
@@ -92,12 +88,14 @@ def generate_response(prompt: str) -> (str, bool):
         st.session_state["conversation_id"] = conversation_id
 
     raw_response = send_response(conversation_id, prompt)
-    question = raw_response["next_question"]["content"]
+    print("raw_response")
+    print(raw_response)
+    question = raw_response["next_question"]
     is_finished = raw_response["is_finished"]
 
     st.session_state["messages"].append({"role": "assistant", "content": question})
 
-    return question, is_finished
+    return is_finished, question
 
 
 # container for chat history
@@ -111,9 +109,13 @@ with container:
         submit_button = st.form_submit_button(label="Send")
 
     if submit_button and user_input:
-        output, is_finished = generate_response(user_input)
+        is_finished, output = generate_response(user_input)
         st.session_state["past"].append(user_input)
-        st.session_state["generated"].append(output)
+        if is_finished:
+            LAST_MESSAGE = "Thank you for your time! Your form is filled successfully!"
+            st.session_state["generated"].append(LAST_MESSAGE)
+        else:
+            st.session_state["generated"].append(output)
 
 
 if st.session_state["generated"]:

@@ -33,8 +33,8 @@ FUNCTIONS = [
             "properties": {
                 "user_answers": {
                     "type": "object",
-                    "description": "Keys of the dict are questions to the user and values are user's responses \n "
-                    "to the coresponding questions",
+                    "description": "Keys of the dict are questions to the user and values are user's responses \n"
+                    "in strings to the corresponding questions",
                 },
             },
             "required": ["user_answers"],
@@ -93,6 +93,7 @@ def save_to_dynamodb_table(table_name: str, data_to_add: dict):
     Function to save a dictionary to DynamoDB table
     """
     table = get_dynamodb_table(table_name)
+
     table.put_item(Item=data_to_add)
     logger.info(f"Successful put to the table: {table_name}")
     logger.debug(f"Added data: {data_to_add}")
@@ -112,7 +113,7 @@ def update_conversation_in_dynamodb(
     table.put_item(Item=chat_history)
     logger.info(f"Item is stored in the table: {table_name}")
 
-    return chat_history
+    return chat_history["conversation"]
 
 
 def generate_assistant_response(chat_history: list, openai_key) -> (bool, str):
@@ -123,12 +124,6 @@ def generate_assistant_response(chat_history: list, openai_key) -> (bool, str):
     chat.upload_conversation_history(chat_history)
     is_finished, next_question = chat.generate_response_for_user(openai_key)
 
-    # is_finished = False
-    # next_question = {
-    #     "role": "assistant",
-    #     "content": "Yes, we do offer car insurance. To complete your application, \
-    #     I would need some additional information. Could you please provide your phone number?",
-    # }
     return is_finished, next_question
 
 
@@ -147,9 +142,10 @@ def lambda_update(event, context) -> dict:
         )
 
         openai_key = get_secret()[SECRET_KEY_OPENAI_KEY]
-        # openai.api_key = openai_key
 
         is_finished, value = generate_assistant_response(chat_history, openai_key)
+        print("is_finished, value")
+        print(is_finished, value)
         result = {"next_question": value, "is_finished": is_finished}
 
         response = {
@@ -159,13 +155,15 @@ def lambda_update(event, context) -> dict:
         }
 
         if is_finished:
+            print("is_finished", is_finished)
             filled_form = value
             filled_form["conversation_id"] = conversation_id
             filled_form["create_time"] = strftime("%Y-%m-%d %H:%M:%S", gmtime())
             forms_table_name = os.environ["FILLED_FORMS_TABLE_NAME"]
+            print("filled_form", filled_form)
             save_to_dynamodb_table(forms_table_name, filled_form)
         else:
-            additional_conversation = {"role": "assistant", "content": value}
+            additional_conversation = [{"role": "assistant", "content": value}]
             chat_history = update_conversation_in_dynamodb(
                 conversations_table_name, conversation_id, additional_conversation
             )
@@ -183,12 +181,14 @@ def lambda_update(event, context) -> dict:
 
 @retry(wait=wait_random_exponential(min=1, max=40), stop=stop_after_attempt(3))
 def chat_completion_request(messages, openai_key, functions=None, model=GPT_MODEL):
-    # openai.api_key = openai_key
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + openai_key,  # openai.api_key,
+        "Authorization": "Bearer " + openai_key,
     }
+    print("messages in chat_completion_request")
+    print(messages)
+
     json_data = {"model": model, "messages": messages}
     if functions is not None:
         json_data.update({"functions": functions})
@@ -244,7 +244,7 @@ class Chat:
             print("chat_response:")
             print(chat_response)
             print(chat_response.json())
-            print(chat_response.error)
+            # print(chat_response.error)
 
             response_content = chat_response.json()["choices"][0]["message"]
 
