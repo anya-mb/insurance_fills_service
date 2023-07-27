@@ -6,7 +6,6 @@ from aws_cdk import (
     aws_lambda as lambda_,
     CfnOutput,
     Duration,
-    aws_s3 as s3,
     aws_secretsmanager as sm,
     aws_dynamodb as dynamodb,
 )
@@ -28,33 +27,9 @@ class InsuranceFillsServiceStack(Stack):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        bucket = s3.Bucket(
-            self,
-            "FilledInsuranceBucket",
-            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
-            bucket_name=f"filled-insurance-bucket-{stage}",
-        )
-
         secret = sm.Secret.from_secret_name_v2(
             self, "insurance_secret", "insurance_fills_secrets"
         )
-
-        # Create the Lambda function to receive the request
-        # The source code is in './lambdas' directory
-        lambda_fn = lambda_.Function(
-            self,
-            "InsuranceFunction",
-            function_name=f"fill_insurance_function_{stage}",
-            runtime=lambda_.Runtime.FROM_IMAGE,
-            code=lambda_.Code.from_asset_image("lambdas/fill_insurance"),
-            handler=lambda_.Handler.FROM_IMAGE,
-            timeout=Duration.seconds(30),
-            environment={"BUCKET_NAME": bucket.bucket_name},
-        )
-
-        secret.grant_read(lambda_fn)
-
-        bucket.grant_write(lambda_fn)
 
         UsersStack(self, f"users-{stage}", stage)
 
@@ -71,15 +46,6 @@ class InsuranceFillsServiceStack(Stack):
             # default_authorizer=authorizer,
         )
 
-        # Add a route to GET /
-        http_api.add_routes(
-            path="/",
-            methods=[_apigw.HttpMethod.GET],
-            integration=_integrations.HttpLambdaIntegration(
-                "LambdaProxyIntegration", handler=lambda_fn
-            ),
-        )
-
         # table to store conversation_id and conversation
         conversations_table = dynamodb.Table(
             self,
@@ -87,8 +53,8 @@ class InsuranceFillsServiceStack(Stack):
             partition_key=dynamodb.Attribute(
                 name="conversation_id", type=dynamodb.AttributeType.STRING
             ),
-            # table_name=f"ConversationsInsuranceTable{stage}",
         )
+
         # table to store final filled forms
         filled_forms_table = dynamodb.Table(
             self,
@@ -96,20 +62,15 @@ class InsuranceFillsServiceStack(Stack):
             partition_key=dynamodb.Attribute(
                 name="conversation_id", type=dynamodb.AttributeType.STRING
             ),
-            # sort_key=dynamodb.Attribute(
-            #     name="create_time", type=dynamodb.AttributeType.STRING
-            # ),
-            # table_name=f"FilledFormsInsuranceTable{stage}",
         )
 
         # POST create forms lambda
         lambda_create_form = lambda_.Function(
             self,
-            "InsuranceFunctionCreateForm",
-            function_name=f"fill_insurance_function_create_form_{stage}",
+            "InsuranceFunctionCreate",
             runtime=lambda_.Runtime.PYTHON_3_9,
-            code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/crud")),
-            handler="app.lambda_create_form",
+            code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/create_get")),
+            handler="create_get_lambda.lambda_create_form",
             timeout=Duration.seconds(30),
             environment={"CONVERSATION_TABLE_NAME": conversations_table.table_name},
         )
@@ -125,13 +86,12 @@ class InsuranceFillsServiceStack(Stack):
         conversations_table.grant_write_data(lambda_create_form)
 
         # POST create forms lambda
-        lambda_update_form = lambda_.Function(
+        lambda_update = lambda_.Function(
             self,
-            "InsuranceFunctionUpdateForm",
-            function_name=f"fill_insurance_function_update_form_{stage}",
-            runtime=lambda_.Runtime.PYTHON_3_9,
-            code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/crud")),
-            handler="app.lambda_update_form",
+            "InsuranceFunctionUpdate",
+            runtime=lambda_.Runtime.FROM_IMAGE,
+            code=lambda_.Code.from_asset_image("lambdas/update"),
+            handler=lambda_.Handler.FROM_IMAGE,
             timeout=Duration.seconds(30),
             environment={
                 "CONVERSATION_TABLE_NAME": conversations_table.table_name,
@@ -139,27 +99,28 @@ class InsuranceFillsServiceStack(Stack):
             },
         )
 
+        secret.grant_read(lambda_update)
+
         # Add a route to POST /form/{conversation_id}
         http_api.add_routes(
             path="/form/{conversation_id}",
             methods=[_apigw.HttpMethod.POST],
             integration=_integrations.HttpLambdaIntegration(
-                "LambdaProxyIntegration", handler=lambda_update_form
+                "LambdaProxyIntegration", handler=lambda_update
             ),
         )
 
-        conversations_table.grant_read_write_data(lambda_update_form)
-
-        filled_forms_table.grant_read_write_data(lambda_update_form)
+        conversations_table.grant_read_write_data(lambda_update)
+        filled_forms_table.grant_read_write_data(lambda_update)
 
         # GET form lambda
         lambda_get_form = lambda_.Function(
             self,
-            "InsuranceFunctionGetForm",
-            function_name=f"fill_insurance_function_get_form_{stage}",
+            "InsuranceFunctionGet",
+            # function_name=f"fill_insurance_function_get_{stage}",
             runtime=lambda_.Runtime.PYTHON_3_9,
-            code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/crud")),
-            handler="app.lambda_get_form",
+            code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/create_get")),
+            handler="create_get_lambda.lambda_get_form",
             timeout=Duration.seconds(30),
             environment={
                 "FILLED_FORMS_TABLE_NAME": filled_forms_table.table_name,

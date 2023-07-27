@@ -1,26 +1,40 @@
 import json
-
-import openai
+import logging
 import requests
 import streamlit as st
 from streamlit_chat import message
 import os
 from dotenv import load_dotenv
 
+# Create logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 load_dotenv("frontend/.env")
 ENDPOINT = os.environ["AWS_API_LINK"]
 
 HEADERS = {"Content-Type": "application/json"}
 
-# Setting page title and header
+# Setting page title and headers
 st.set_page_config(page_title="Insurance bot", page_icon="🕵️‍♀️")
 st.markdown(
     "<h1 style='text-align: center;'>Fill your insurance bot</h1>",
     unsafe_allow_html=True,
 )
+st.markdown(
+    "Welcome to the AI Insurance Assistant! "
+    "I can assist you in filling out a questionnaire to apply for insurance.",
+    unsafe_allow_html=True,
+)
 
-# Set org ID and API key
-openai.api_key = os.environ["OPENAI_API_KEY"]
+st.markdown(
+    "I will guide you through the process step by step. \n",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    "Please introduce yourself.",
+    unsafe_allow_html=True,
+)
 
 # Initialise session state variables
 if "generated" not in st.session_state:
@@ -28,13 +42,14 @@ if "generated" not in st.session_state:
 if "past" not in st.session_state:
     st.session_state["past"] = []
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [
-        {"role": "system", "content": "You are a helpful assistant."}
-    ]
+    st.session_state["messages"] = []
 
 
 # reset everything
 def clear_state():
+    """
+    Clears streamlit state
+    """
     st.session_state["generated"] = []
     st.session_state["past"] = []
     st.session_state["messages"] = [
@@ -44,7 +59,12 @@ def clear_state():
         del st.session_state["session_id"]
 
 
-def get_user_prompt_data_json(user_reply: str):
+def get_user_prompt_data_json(user_reply: str) -> dict:
+    """
+    Converts user replay into GPT4 API format
+    :param user_reply:
+    :return:
+    """
     data = [{"role": "user", "content": user_reply}]
     data_json = json.dumps(data)
     return data_json
@@ -55,7 +75,7 @@ def send_response(conversation_id: str, user_reply: str) -> dict:
     Response looks like this:
         {
         'next_question': 'Question',
-        'is_finished': False
+        'is_finished': bool
         }
 
     :param conversation_id:
@@ -67,7 +87,8 @@ def send_response(conversation_id: str, user_reply: str) -> dict:
     data_json = get_user_prompt_data_json(user_reply)
 
     response = requests.post(url, headers=HEADERS, data=data_json)
-
+    logger.info("response")
+    logger.info(response)
     return response.json()
 
 
@@ -92,12 +113,14 @@ def generate_response(prompt: str) -> (str, bool):
         st.session_state["conversation_id"] = conversation_id
 
     raw_response = send_response(conversation_id, prompt)
-    question = raw_response["next_question"]["content"]
+    logger.info("raw_response")
+    logger.info(raw_response)
+    question = raw_response["next_question"]
     is_finished = raw_response["is_finished"]
 
     st.session_state["messages"].append({"role": "assistant", "content": question})
 
-    return question, is_finished
+    return is_finished, question
 
 
 # container for chat history
@@ -111,9 +134,13 @@ with container:
         submit_button = st.form_submit_button(label="Send")
 
     if submit_button and user_input:
-        output, is_finished = generate_response(user_input)
+        is_finished, output = generate_response(user_input)
         st.session_state["past"].append(user_input)
-        st.session_state["generated"].append(output)
+        if is_finished:
+            LAST_MESSAGE = "Thank you for your time! Your form is filled successfully!"
+            st.session_state["generated"].append(LAST_MESSAGE)
+        else:
+            st.session_state["generated"].append(output)
 
 
 if st.session_state["generated"]:
