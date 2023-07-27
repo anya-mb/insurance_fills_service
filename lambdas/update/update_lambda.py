@@ -234,7 +234,6 @@ class Chat:
     def generate_response_for_user(
         self, openai_key, functions: list = FUNCTIONS
     ) -> (bool, str):
-
         chat_response = chat_completion_request(
             self.conversation_history, openai_key, functions=functions
         )
@@ -257,7 +256,6 @@ class Chat:
                     response_content["function_call"]["name"]
                     == "save_users_questionnaire"
                 ):
-
                     questionnaire = json.loads(
                         response_content["function_call"]["arguments"]
                     )
