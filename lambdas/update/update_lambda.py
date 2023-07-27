@@ -19,8 +19,8 @@ FUNCTIONS = [
             "properties": {
                 "user_answers": {
                     "type": "object",
-                    "description": "Keys of the dict are questions to the user and values are user's responses \n"
-                    "in strings to the corresponding questions",
+                    "description": "Keys of the dict are questions to the user and "
+                    "values are user's responses in strings to the corresponding questions",
                 },
             },
             "required": ["user_answers"],
@@ -28,7 +28,8 @@ FUNCTIONS = [
     },
     {
         "name": "ask_follow_up_question",
-        "description": "If the user didn't answer all the questions, generates an additional question to ask user.",
+        "description": "If the user didn't answer all the questions, "
+        "generates an additional question to ask user.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -177,7 +178,9 @@ def lambda_update(event, context) -> dict:
 
 # Functions to work with OpenAI GPT4 model
 @retry(wait=wait_random_exponential(min=1, max=40), stop=stop_after_attempt(3))
-def chat_completion_request(messages, openai_key, functions=None, model=GPT_MODEL):
+def chat_completion_request(
+    messages: list, openai_key: str, functions: list = None, model: str = GPT_MODEL
+) -> dict:
     """
     Sends a request to the OpenAI GPT model for chat completions.
     """
