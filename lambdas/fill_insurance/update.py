@@ -9,7 +9,7 @@ import requests
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 
 
-# openai functions
+# OpenAI functions
 FUNCTIONS = [
     {
         "name": "save_users_questionnaire",
@@ -42,10 +42,11 @@ FUNCTIONS = [
     },
 ]
 
-
+# Secret Manager configuration
 SECRET_NAME = "insurance_fills_secrets"
 SECRET_KEY_OPENAI_KEY = "open_ai_key"
 
+# OpenAI GPT model
 GPT_MODEL = "gpt-4-0613"
 
 # Create logger
@@ -54,6 +55,9 @@ logger.setLevel(logging.INFO)
 
 
 def get_secret():
+    """
+    Retrieves the secret from AWS Secrets Manager.
+    """
     region_name = "us-east-1"
 
     # Create a Secrets Manager client
@@ -136,8 +140,8 @@ def lambda_update(event, context) -> dict:
         openai_key = get_secret()[SECRET_KEY_OPENAI_KEY]
 
         is_finished, value = generate_assistant_response(chat_history, openai_key)
-        print("is_finished, value")
-        print(is_finished, value)
+        logger.debug("is_finished, value")
+        logger.debug(is_finished, value)
         result = {"next_question": value, "is_finished": is_finished}
 
         response = {
@@ -147,12 +151,12 @@ def lambda_update(event, context) -> dict:
         }
 
         if is_finished:
-            print("is_finished", is_finished)
+            logger.debug("is_finished", is_finished)
             filled_form = value
             filled_form["conversation_id"] = conversation_id
             filled_form["create_time"] = strftime("%Y-%m-%d %H:%M:%S", gmtime())
             forms_table_name = os.environ["FILLED_FORMS_TABLE_NAME"]
-            print("filled_form", filled_form)
+            logger.debug("filled_form", filled_form)
             save_to_dynamodb_table(forms_table_name, filled_form)
         else:
             additional_conversation = [{"role": "assistant", "content": value}]
@@ -173,13 +177,13 @@ def lambda_update(event, context) -> dict:
 
 @retry(wait=wait_random_exponential(min=1, max=40), stop=stop_after_attempt(3))
 def chat_completion_request(messages, openai_key, functions=None, model=GPT_MODEL):
-
+    """
+    Sends a request to the OpenAI GPT model for chat completions.
+    """
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + openai_key,
     }
-    print("messages in chat_completion_request")
-    print(messages)
 
     json_data = {"model": model, "messages": messages}
     if functions is not None:
