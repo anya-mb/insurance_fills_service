@@ -15,6 +15,10 @@ logger.setLevel(logging.INFO)
 
 
 class DecimalEncoder(json.JSONEncoder):
+    """
+    Encoder for int values that are stored in DynamoDB as Decimal
+    """
+
     def default(self, o):
         if isinstance(o, Decimal):
             return str(o)
@@ -88,11 +92,9 @@ def lambda_get_form(event, context) -> dict:
         conversation_id = event.get("pathParameters")["conversation_id"]
         response = forms_table.get_item(Key={"conversation_id": conversation_id})
         filled_form = response.get("Item", {})
-        print("filled_form")
-        print(filled_form)
         json_filled_form = json.dumps(filled_form, cls=DecimalEncoder)
-        print("json_filled_form")
-        print(json_filled_form)
+        logger.debug("json_filled_form")
+        logger.debug(json_filled_form)
 
         response = {
             "statusCode": HTTPStatus.OK.value,

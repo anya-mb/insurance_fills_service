@@ -175,6 +175,7 @@ def lambda_update(event, context) -> dict:
     return response
 
 
+# Functions to work with OpenAI GPT4 model
 @retry(wait=wait_random_exponential(min=1, max=40), stop=stop_after_attempt(3))
 def chat_completion_request(messages, openai_key, functions=None, model=GPT_MODEL):
     """
@@ -204,7 +205,6 @@ def chat_completion_request(messages, openai_key, functions=None, model=GPT_MODE
 class Chat:
     def __init__(self):
         self.conversation_history = []
-        # self._add_prompt("system", SYSTEM_SETUP_PROMPT)
 
     def _add_prompt(self, role: str, content: str):
         message = {"role": role, "content": content}
@@ -237,17 +237,13 @@ class Chat:
         )
 
         if chat_response is not None:
-            print("chat_response:")
-            print(chat_response)
-            print(chat_response.json())
-            # print(chat_response.error)
+            logger.info("chat_response:")
+            logger.info(chat_response)
+            logger.info(chat_response.json())
 
             response_content = chat_response.json()["choices"][0]["message"]
 
             message = chat_response.json()["choices"][0]["message"]["content"]
-
-            print("message:")
-            print(message)
 
             if message is not None:
                 chat_finished = False
@@ -262,8 +258,8 @@ class Chat:
                     questionnaire = json.loads(
                         response_content["function_call"]["arguments"]
                     )
-                    print("Result questionnaire:")
-                    print(questionnaire)
+                    logger.info("Result questionnaire:")
+                    logger.info(questionnaire)
 
                     chat_finished = True
                     return chat_finished, questionnaire
@@ -275,8 +271,8 @@ class Chat:
                     next_question = json.loads(
                         response_content["function_call"]["arguments"]
                     )["next_question"]
-                    print("Next question:")
-                    print(next_question)
+                    logger.info("Next question:")
+                    logger.info(next_question)
 
                     chat_finished = False
                     return chat_finished, next_question

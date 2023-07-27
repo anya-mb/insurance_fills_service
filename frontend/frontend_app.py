@@ -1,11 +1,14 @@
 import json
-
-# import openai
+import logging
 import requests
 import streamlit as st
 from streamlit_chat import message
 import os
 from dotenv import load_dotenv
+
+# Create logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 load_dotenv("frontend/.env")
 ENDPOINT = os.environ["AWS_API_LINK"]
@@ -62,8 +65,8 @@ def send_response(conversation_id: str, user_reply: str) -> dict:
     data_json = get_user_prompt_data_json(user_reply)
 
     response = requests.post(url, headers=HEADERS, data=data_json)
-    print("response")
-    print(response)
+    logger.info("response")
+    logger.info(response)
     return response.json()
 
 
@@ -88,8 +91,8 @@ def generate_response(prompt: str) -> (str, bool):
         st.session_state["conversation_id"] = conversation_id
 
     raw_response = send_response(conversation_id, prompt)
-    print("raw_response")
-    print(raw_response)
+    logger.info("raw_response")
+    logger.info(raw_response)
     question = raw_response["next_question"]
     is_finished = raw_response["is_finished"]
 
