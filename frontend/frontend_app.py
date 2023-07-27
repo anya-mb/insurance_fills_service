@@ -15,10 +15,24 @@ ENDPOINT = os.environ["AWS_API_LINK"]
 
 HEADERS = {"Content-Type": "application/json"}
 
-# Setting page title and header
+# Setting page title and headers
 st.set_page_config(page_title="Insurance bot", page_icon="🕵️‍♀️")
 st.markdown(
     "<h1 style='text-align: center;'>Fill your insurance bot</h1>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    "Welcome to the AI Insurance Assistant! "
+    "I can assist you in filling out a questionnaire to apply for insurance.",
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    "I will guide you through the process step by step. \n",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    "Please introduce yourself.",
     unsafe_allow_html=True,
 )
 
@@ -33,6 +47,9 @@ if "messages" not in st.session_state:
 
 # reset everything
 def clear_state():
+    """
+    Clears streamlit state
+    """
     st.session_state["generated"] = []
     st.session_state["past"] = []
     st.session_state["messages"] = [
@@ -42,7 +59,12 @@ def clear_state():
         del st.session_state["session_id"]
 
 
-def get_user_prompt_data_json(user_reply: str):
+def get_user_prompt_data_json(user_reply: str) -> dict:
+    """
+    Converts user replay into GPT4 API format
+    :param user_reply:
+    :return:
+    """
     data = [{"role": "user", "content": user_reply}]
     data_json = json.dumps(data)
     return data_json

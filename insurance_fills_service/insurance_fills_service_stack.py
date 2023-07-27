@@ -54,6 +54,7 @@ class InsuranceFillsServiceStack(Stack):
                 name="conversation_id", type=dynamodb.AttributeType.STRING
             ),
         )
+
         # table to store final filled forms
         filled_forms_table = dynamodb.Table(
             self,
@@ -61,19 +62,15 @@ class InsuranceFillsServiceStack(Stack):
             partition_key=dynamodb.Attribute(
                 name="conversation_id", type=dynamodb.AttributeType.STRING
             ),
-            # sort_key=dynamodb.Attribute(
-            #     name="create_time", type=dynamodb.AttributeType.STRING
-            # ),
         )
 
         # POST create forms lambda
         lambda_create_form = lambda_.Function(
             self,
             "InsuranceFunctionCreate",
-            # function_name=f"fill_insurance_function_create_form_{stage}",
             runtime=lambda_.Runtime.PYTHON_3_9,
-            code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/crud")),
-            handler="create_get.lambda_create_form",
+            code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/create_get")),
+            handler="create_get_lambda.lambda_create_form",
             timeout=Duration.seconds(30),
             environment={"CONVERSATION_TABLE_NAME": conversations_table.table_name},
         )
@@ -92,9 +89,8 @@ class InsuranceFillsServiceStack(Stack):
         lambda_update = lambda_.Function(
             self,
             "InsuranceFunctionUpdate",
-            # function_name=f"fill_insurance_function_update_{stage}",
             runtime=lambda_.Runtime.FROM_IMAGE,
-            code=lambda_.Code.from_asset_image("lambdas/fill_insurance"),
+            code=lambda_.Code.from_asset_image("lambdas/update"),
             handler=lambda_.Handler.FROM_IMAGE,
             timeout=Duration.seconds(30),
             environment={
@@ -123,8 +119,8 @@ class InsuranceFillsServiceStack(Stack):
             "InsuranceFunctionGet",
             # function_name=f"fill_insurance_function_get_{stage}",
             runtime=lambda_.Runtime.PYTHON_3_9,
-            code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/crud")),
-            handler="create_get.lambda_get_form",
+            code=lambda_.Code.from_asset(os.path.join(DIRNAME, "lambdas/create_get")),
+            handler="create_get_lambda.lambda_get_form",
             timeout=Duration.seconds(30),
             environment={
                 "FILLED_FORMS_TABLE_NAME": filled_forms_table.table_name,
