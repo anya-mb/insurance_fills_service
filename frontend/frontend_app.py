@@ -32,7 +32,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    "Please introduce yourself.",
+    "Please describe your situation.",
     unsafe_allow_html=True,
 )
 
@@ -99,8 +99,10 @@ def begin_conversation(user_reply: str) -> str:
     data_json = get_user_prompt_data_json(user_reply)
 
     response = requests.post(url, headers=HEADERS, data=data_json)
+    conversation_id = response.json()["conversation_id"]
+    print(f"conversation_id: {conversation_id}")
 
-    return response.json()["conversation_id"]
+    return conversation_id
 
 
 def generate_response(prompt: str) -> (str, bool):
@@ -123,6 +125,22 @@ def generate_response(prompt: str) -> (str, bool):
     return is_finished, question
 
 
+def get_filled_form() -> str:
+    """Retrieves the filled form crom the DynamoDB"""
+    print("in get_filled_form")
+    conversation_id = st.session_state.get("conversation_id", None)
+    print(f"conversation_id: {conversation_id}")
+
+    url = f"{ENDPOINT}form/{conversation_id}"
+
+    response = requests.get(url, headers=HEADERS)
+    print("response", response)
+    print("response.json()", response.json())
+    logger.info("filled_form_response")
+    logger.info(response)
+    return response.json()
+
+
 # container for chat history
 response_container = st.container()
 # container for text box
@@ -137,8 +155,14 @@ with container:
         is_finished, output = generate_response(user_input)
         st.session_state["past"].append(user_input)
         if is_finished:
-            LAST_MESSAGE = "Thank you for your time! Your form is filled successfully!"
+            filled_form = get_filled_form()
+            LAST_MESSAGE = (
+                "Thank you for your time! Your form is filled successfully!\n"
+                + filled_form
+            )
             st.session_state["generated"].append(LAST_MESSAGE)
+
+            # st.session_state["generated"].append(filled_form)
         else:
             st.session_state["generated"].append(output)
 
