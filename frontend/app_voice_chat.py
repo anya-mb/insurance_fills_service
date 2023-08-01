@@ -6,7 +6,7 @@ from streamlit_chat import message
 import os
 import openai
 
-# from audiorecorder import audiorecorder
+from audiorecorder import audiorecorder
 from dotenv import load_dotenv
 
 # Create logger
@@ -162,23 +162,23 @@ with container:
         user_input = st.text_area("You:", key="input", height=100)
         submit_button = st.form_submit_button(label="Send")
 
-        # audio = audiorecorder("Click to record", "Recording...")
-        #
-        # if len(audio) > 0:
-        #     # To play audio in frontend:
-        #     st.audio(audio.tobytes())
-        #
-        #     # To save audio to a file:
-        #     wav_file = open("audio.mp3", "wb")
-        #     wav_file.write(audio.tobytes())
-        #
-        #     audio_file = open("audio.mp3", "rb")
-        #     transcript = openai.Audio.transcribe("whisper-1", audio_file)
-        #     print("transcript", transcript)
-        #     st.write(transcript)
-        #
-        #     user_input = transcript["text"]
-        #     print("user_input", user_input)
+        audio = audiorecorder("Click to record", "Recording...")
+
+        if len(audio) > 0:
+            # To play audio in frontend:
+            st.audio(audio.tobytes())
+
+            # To save audio to a file:
+            wav_file = open("audio.mp3", "wb")
+            wav_file.write(audio.tobytes())
+
+            audio_file = open("audio.mp3", "rb")
+            transcript = openai.Audio.transcribe("whisper-1", audio_file)
+            print("transcript", transcript)
+            st.write(transcript)
+
+            user_input = transcript["text"]
+            print("user_input", user_input)
 
     if submit_button and user_input:
         is_finished, output = generate_response(user_input)
@@ -196,12 +196,6 @@ with container:
         else:
             st.session_state["generated"].append(output)
 
-
-# if st.button("Transcribe"):
-#     audio_file = open("audio.mp3", "rb")
-#     transcript = openai.Audio.transcribe("whisper-1", audio_file)
-#     print("transcript", transcript)
-#     st.write(transcript)
 
 if st.session_state["generated"]:
     with response_container:
