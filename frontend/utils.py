@@ -58,7 +58,7 @@ def begin_conversation(user_reply: str) -> str:
 
     response = requests.post(url, headers=HEADERS, data=data_json)
     conversation_id = response.json()["conversation_id"]
-    print(f"conversation_id: {conversation_id}")
+    logger.info(f"conversation_id: {conversation_id}")
 
     return conversation_id
 
@@ -110,8 +110,7 @@ def get_filled_form(conversation_id: str) -> str:
     url = f"{endpoint}form/{conversation_id}"
 
     response = requests.get(url, headers=HEADERS)
-    print("response", response)
-    print("response.json()", response.json())
+    logger.info("response.json()", response.json())
     logger.info("filled_form_response")
     logger.info(response)
     return response.json()

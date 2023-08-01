@@ -30,7 +30,6 @@ if "messages" not in st.session_state:
 
 
 if "conversation_id" not in st.session_state:
-    print("Initialise session state variables")
     conversation_id = begin_conversation(" ")
     st.session_state["conversation_id"] = conversation_id
 
