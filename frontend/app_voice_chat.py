@@ -9,6 +9,11 @@ import openai
 from audiorecorder import audiorecorder
 from dotenv import load_dotenv
 
+from io import BytesIO
+from gtts import gTTS, gTTSError
+from time import gmtime, strftime
+
+
 # Create logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -18,7 +23,10 @@ ENDPOINT = os.environ["AWS_API_LINK"]
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
+AUDIOS_DIR = "user_audios/"
+
 HEADERS = {"Content-Type": "application/json"}
+
 
 # Setting page title and headers
 st.set_page_config(page_title="Insurance bot", page_icon="🕵️‍♀️")
@@ -48,6 +56,8 @@ if "past" not in st.session_state:
     st.session_state["past"] = []
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
+if "audio_filenames" not in st.session_state:
+    st.session_state["audio_filenames"] = []
 
 
 # reset everything
@@ -60,8 +70,9 @@ def clear_state():
     st.session_state["messages"] = [
         {"role": "system", "content": "You are a helpful assistant."}
     ]
-    if "session_id" in st.session_state:
-        del st.session_state["session_id"]
+    st.session_state["session_id"] = ""
+    st.session_state["conversation_id"] = begin_conversation(" ")
+    st.session_state["audio_filenames"] = []
 
 
 def get_user_prompt_data_json(user_reply: str) -> dict:
@@ -134,6 +145,10 @@ def get_filled_form() -> str:
     """Retrieves the filled form crom the DynamoDB"""
     print("in get_filled_form")
     conversation_id = st.session_state.get("conversation_id", None)
+
+    if conversation_id is None:
+        raise ValueError("conversation_id is None")
+
     print(f"conversation_id: {conversation_id}")
 
     url = f"{ENDPOINT}form/{conversation_id}"
@@ -152,10 +167,26 @@ def reformat_filled_form(form: str) -> str:
     return result
 
 
+def show_audio_player(ai_content: str) -> None:
+    sound_file = BytesIO()
+    try:
+        tts = gTTS(text=ai_content, lang="en", tld="ca")
+        tts.write_to_fp(sound_file)
+        # st.write(st.session_state.locale.stt_placeholder)
+        st.audio(sound_file)
+    except gTTSError as err:
+        st.error(err)
+
+
 # container for chat history
 response_container = st.container()
 # container for text box
 container = st.container()
+
+if "conversation_id" not in st.session_state:
+    conversation_id = begin_conversation(" ")
+    st.session_state["conversation_id"] = conversation_id
+
 
 with container:
     with st.form(key="my_form", clear_on_submit=True):
@@ -168,14 +199,21 @@ with container:
             # To play audio in frontend:
             st.audio(audio.tobytes())
 
+            audio_filename = (
+                AUDIOS_DIR
+                + st.session_state["conversation_id"]
+                + strftime("%Y-%m-%d_%H:%M:%S", gmtime())
+                + ".mp3"
+            )
+
             # To save audio to a file:
-            wav_file = open("audio.mp3", "wb")
+            wav_file = open(audio_filename, "wb")
             wav_file.write(audio.tobytes())
 
-            audio_file = open("audio.mp3", "rb")
+            audio_file = open(audio_filename, "rb")
             transcript = openai.Audio.transcribe("whisper-1", audio_file)
             print("transcript", transcript)
-            st.write(transcript)
+            # st.write(transcript)
 
             user_input = transcript["text"]
             print("user_input", user_input)
@@ -189,13 +227,14 @@ with container:
             LAST_MESSAGE = (
                 "Thank you for your time! Your form is filled successfully!\n\n"
             )
+            show_audio_player(LAST_MESSAGE)
             message_and_form = LAST_MESSAGE + filled_form
             st.session_state["generated"].append(message_and_form)
 
             # st.session_state["generated"].append(filled_form)
         else:
             st.session_state["generated"].append(output)
-
+            show_audio_player(output)
 
 if st.session_state["generated"]:
     with response_container:
