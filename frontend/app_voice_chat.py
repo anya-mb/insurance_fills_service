@@ -168,11 +168,12 @@ def reformat_filled_form(form: str) -> str:
 
 
 def show_audio_player(ai_content: str) -> None:
+    """Shows audio player in chatbox
+    if activated, it says ai_content"""
     sound_file = BytesIO()
     try:
         tts = gTTS(text=ai_content, lang="en", tld="ca")
         tts.write_to_fp(sound_file)
-        # st.write(st.session_state.locale.stt_placeholder)
         st.audio(sound_file)
     except gTTSError as err:
         st.error(err)
@@ -212,11 +213,10 @@ with container:
 
             audio_file = open(audio_filename, "rb")
             transcript = openai.Audio.transcribe("whisper-1", audio_file)
-            print("transcript", transcript)
-            # st.write(transcript)
+            logger.info("transcript", transcript)
 
             user_input = transcript["text"]
-            print("user_input", user_input)
+            logger.info("user_input", user_input)
 
     if submit_button and user_input:
         is_finished, output = generate_response(user_input)
@@ -231,7 +231,6 @@ with container:
             message_and_form = LAST_MESSAGE + filled_form
             st.session_state["generated"].append(message_and_form)
 
-            # st.session_state["generated"].append(filled_form)
         else:
             st.session_state["generated"].append(output)
             show_audio_player(output)
