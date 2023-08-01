@@ -79,7 +79,12 @@ DOCKER_DEFAULT_PLATFORM=linux/amd64 cdk deploy  --all
 
 ### Run
 
-To run streamlit frontend:
+To run streamlit frontend for text chat:
 ```
-streamlit run frontend/frontend_app.py
+streamlit run frontend/app_text_chat.py
+```
+
+To run streamlit frontend for voice chat:
+```
+streamlit run frontend/app_voice_chat.py
 ```
