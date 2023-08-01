@@ -31,6 +31,12 @@ graph LR
   Lambda -- uses GPT-4 --> OpenAI[OpenAI API]
 ```
 
+
+## Demo for the text version of the bot:
+https://github.com/anya-mb/insurance_fills_service/assets/47106377/5301ea76-505e-4bb8-9b82-c8c1f10f07a1
+
+
+
 ## Setup
 
 To install dependencies:
