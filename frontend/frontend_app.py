@@ -4,6 +4,9 @@ import requests
 import streamlit as st
 from streamlit_chat import message
 import os
+import openai
+
+# from audiorecorder import audiorecorder
 from dotenv import load_dotenv
 
 # Create logger
@@ -12,6 +15,8 @@ logger.setLevel(logging.INFO)
 
 load_dotenv("frontend/.env")
 ENDPOINT = os.environ["AWS_API_LINK"]
+
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 HEADERS = {"Content-Type": "application/json"}
 
@@ -141,6 +146,12 @@ def get_filled_form() -> str:
     return response.json()
 
 
+def reformat_filled_form(form: str) -> str:
+    form = json.loads(form)
+    result = "\n".join([key + " = " + value for key, value in form.items()])
+    return result
+
+
 # container for chat history
 response_container = st.container()
 # container for text box
@@ -151,21 +162,46 @@ with container:
         user_input = st.text_area("You:", key="input", height=100)
         submit_button = st.form_submit_button(label="Send")
 
+        # audio = audiorecorder("Click to record", "Recording...")
+        #
+        # if len(audio) > 0:
+        #     # To play audio in frontend:
+        #     st.audio(audio.tobytes())
+        #
+        #     # To save audio to a file:
+        #     wav_file = open("audio.mp3", "wb")
+        #     wav_file.write(audio.tobytes())
+        #
+        #     audio_file = open("audio.mp3", "rb")
+        #     transcript = openai.Audio.transcribe("whisper-1", audio_file)
+        #     print("transcript", transcript)
+        #     st.write(transcript)
+        #
+        #     user_input = transcript["text"]
+        #     print("user_input", user_input)
+
     if submit_button and user_input:
         is_finished, output = generate_response(user_input)
         st.session_state["past"].append(user_input)
         if is_finished:
             filled_form = get_filled_form()
+            filled_form = reformat_filled_form(filled_form)
             LAST_MESSAGE = (
-                "Thank you for your time! Your form is filled successfully!\n"
-                + filled_form
+                "Thank you for your time! Your form is filled successfully!\n\n"
             )
-            st.session_state["generated"].append(LAST_MESSAGE)
+            message_and_form = LAST_MESSAGE + filled_form
+            st.session_state["generated"].append(message_and_form)
 
             # st.session_state["generated"].append(filled_form)
         else:
             st.session_state["generated"].append(output)
 
+
+# if st.button("Transcribe"):
+#     audio_file = open("audio.mp3", "rb")
+#     transcript = openai.Audio.transcribe("whisper-1", audio_file)
+#     print("transcript", transcript)
+#     st.write(transcript)
 
 if st.session_state["generated"]:
     with response_container:
